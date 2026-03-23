@@ -54,6 +54,59 @@ If you violate a rule:
 
 ---
 
+## Examples
+
+### ✓ Correct: Single Question
+
+```
+State: Question #1 | Waiting: No | Resolved: 0 gaps | Remaining: 5 gaps
+
+**Context**: "强度等级：弱/中/强"
+
+**Question**: 边界值6和12属于哪个等级？
+
+**Why it matters**: 不同归属会导致"123abc"（长度6）判定结果不同。
+
+**Options**:
+A. 闭区间 [6,12]，6和12都属"中"
+B. 半开区间 [6,12)，6属"中"，12属"强"
+```
+
+### ✗ Wrong: Multiple Questions
+
+```
+**Questions**:
+1. 边界值6属于哪个等级？
+2. 特殊字符有哪些？
+3. 空密码怎么处理？
+```
+→ **Violation**: Batched 3 questions. User may miss some.
+
+### ✗ Wrong: Engineering Question
+
+```
+**Question**: 用正则还是字符遍历检测字符类型？
+```
+→ **Violation**: Engineering choice, not business meaning.
+
+### ✓ Correct: Answer Confirmation
+
+```
+User: A
+
+Agent: To confirm: 边界值6和12都属于"中"等级（闭区间）。正确吗？
+```
+
+### ✓ Correct: Error Recovery
+
+```
+Agent: 我刚才一次问了多个问题，违反了规则。让我重新问第一个：
+
+**Question**: 边界值6和12属于哪个等级？
+```
+
+---
+
 ## Clarification Stage
 
 ### Priority Order
