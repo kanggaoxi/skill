@@ -10,6 +10,48 @@ This Skill helps you convert ambiguous requirements, business, or design documen
 2. **Detailed Design Document** - Implementation-ready specification
 3. **Golden Reference Program** - A readable, correctness-focused reference implementation
 
+## Two Versions
+
+This skill provides two versions for different model capabilities:
+
+| Version | File | Lines | Target Models |
+|---------|------|-------|---------------|
+| **General** | `SKILL.md` | 176 | All models, especially weaker ones |
+| **Full** | `SKILL-FULL.md` | 221 | Strong models (GLM 5+, Claude, GPT-4) |
+
+### When to Use Which Version
+
+| Model | Recommended Version |
+|-------|---------------------|
+| GLM 4.7 or weaker | `SKILL.md` |
+| GLM 5+ | `SKILL-FULL.md` |
+| Claude (Sonnet/Opus) | `SKILL-FULL.md` |
+| GPT-4 / GPT-4o | `SKILL-FULL.md` |
+| Unknown or mixed | `SKILL.md` |
+
+### Version Differences
+
+| Feature | SKILL.md (General) | SKILL-FULL.md (Full) |
+|---------|-------------------|----------------------|
+| Few-shot Examples | ✓ 5 examples | ✗ |
+| Pre-Question Checklist | ✓ | ✓ |
+| Error Recovery | ✓ | ✓ |
+| Business Gap Ledger | ✗ | ✓ P0/P1/P2 priority |
+| 10-step Workflow | ✗ | ✓ |
+| Clarification Exit Criteria | ✗ | ✓ |
+| Design Doc Traceability | ✗ | ✓ |
+| Golden Correctness Rules | Basic | Strict |
+
+### How to Switch Versions
+
+```bash
+# Use full version (for strong models)
+cp SKILL-FULL.md SKILL.md
+
+# Use general version (for weak models or general use)
+git checkout SKILL.md
+```
+
 ## Usage
 
 ```
@@ -52,13 +94,13 @@ The generated design document includes:
 - **Examples** - Input/output examples
 - **Acceptance Criteria** - Verification standards
 
-## Features
+## Key Features
 
-- **Business-First** - Questions focus on business meaning, not engineering choices
-- **Incremental Confirmation** - Ask one question at a time to avoid overload
+- **Single Question Rule** - Ask ONE question at a time, wait for answer
+- **Business Focus** - Questions about business meaning, not engineering choices
+- **Self-Check Mechanisms** - Pre-question checklist and error recovery
 - **Gate Mechanism** - No code is written until design document is approved
-- **Scope Control** - Complex systems are decomposed into smaller slices
-- **Verifiable** - Reference program is validated against design document examples
+- **Correctness First** - Golden program prioritizes correctness over performance
 
 ## Use Cases
 
@@ -80,8 +122,24 @@ The generated design document includes:
 
 ```
 business-spec-to-golden/
-├── SKILL.md      # Skill definition file
-└── README.md     # This file
+├── SKILL.md          # General version (default)
+├── SKILL-FULL.md     # Full version for strong models
+├── README.md         # This file
+└── eval/             # Evaluation framework
+    ├── testcases/    # Test cases with preset ambiguities
+    ├── judges/       # Scoring rubric
+    └── validators/   # Validation scripts
+```
+
+## Evaluation
+
+This skill includes an evaluation framework for testing:
+
+```bash
+# Run validation
+bash eval/validators/validate.sh
+
+# See eval/README.md for details
 ```
 
 ## License
