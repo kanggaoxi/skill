@@ -1,6 +1,6 @@
 ---
 name: business-spec-to-golden
-description: Transform requirements into design docs and golden programs. Ask ONE question at a time during clarification. Three stages: Clarify → Design Doc → Golden Program.
+description: "Transform requirements into design docs and golden programs. Ask ONE question at a time during clarification. Three stages: Clarify → Design Doc → Golden Program."
 ---
 
 # Requirements to Design Doc and Golden Program
