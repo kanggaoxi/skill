@@ -45,11 +45,14 @@ This skill provides two versions for different model capabilities:
 ### How to Switch Versions
 
 ```bash
-# Use full version (for strong models)
+# Back up the currently active skill file first
+cp SKILL.md SKILL.md.bak
+
+# Use full version (for stronger models)
 cp SKILL-FULL.md SKILL.md
 
-# Use general version (for weak models or general use)
-git checkout SKILL.md
+# Restore the previous active version when needed
+mv SKILL.md.bak SKILL.md
 ```
 
 ## Usage
@@ -124,22 +127,7 @@ The generated design document includes:
 business-spec-to-golden/
 ├── SKILL.md          # General version (default)
 ├── SKILL-FULL.md     # Full version for strong models
-├── README.md         # This file
-└── eval/             # Evaluation framework
-    ├── testcases/    # Test cases with preset ambiguities
-    ├── judges/       # Scoring rubric
-    └── validators/   # Validation scripts
-```
-
-## Evaluation
-
-This skill includes an evaluation framework for testing:
-
-```bash
-# Run validation
-bash eval/validators/validate.sh
-
-# See eval/README.md for details
+└── README.md         # This file
 ```
 
 ## License
