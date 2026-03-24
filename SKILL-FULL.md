@@ -1,6 +1,6 @@
 ---
 name: business-spec-to-golden
-description: Turn rough business requirements into a clarified implementation design doc and a correctness-first golden program. Ask one business question at a time, track ambiguity in a gap ledger, and require approval between Clarify → Design Doc → Golden Program.
+description: Turn rough business requirements into a clarified, reviewed implementation design doc and a correctness-first golden program. Ask one business question at a time, track ambiguity in a gap ledger, and require approval between Clarify → Design Doc → Spec Review → Golden Program.
 ---
 
 # Business Spec to Design Doc and Golden Program
@@ -13,12 +13,12 @@ Transform a rough requirement document into:
 
 ## Hard Gates
 
-- **Stage Order**: Clarify → Design Doc → Golden Program. Never skip or reorder.
+- **Stage Order**: Clarify → Design Doc → Spec Review → Golden Program. Never skip or reorder.
 - **Single Question Rule**: Ask exactly one business question at a time. Wait for the answer before asking the next one.
 - **Business Focus**: Ask about business meaning, rules, priorities, examples, boundaries, and failure behavior. Do not ask engineering choices unless the user explicitly asks for them.
 - **No Silent Assumptions**: Do not invent missing business rules and quietly continue. Resolve them with the user, or list them as explicit assumptions and get acceptance before proceeding.
 - **Scope Control**: If the source document covers multiple subsystems or flows, decompose it and work one slice at a time.
-- **Approval Gates**: Require user approval after the clarified business summary, after the design doc, and after the golden program.
+- **Approval Gates**: Require user approval after the clarified business summary, after the design doc draft, after the written/reviewed spec, and after the golden program.
 - **Correctness First**: Optimize the golden program for correctness, determinism, and auditability before convenience or performance.
 
 ## Workflow
@@ -28,11 +28,14 @@ Transform a rough requirement document into:
 3. If needed, decompose scope and pick one slice.
 4. Clarify gaps one by one until the clarification exit criteria are met.
 5. Write a clarified business summary and get user approval.
-6. Write the design doc and get user approval.
-7. Create a lightweight golden-program plan.
-8. Implement the golden program.
-9. Verify it against the design doc examples and boundary cases.
-10. Ask the user to review the golden program.
+6. Write the design doc and get user approval on the draft.
+7. Save the design doc as a markdown spec file.
+8. Run the spec review loop and fix issues until approved.
+9. Ask the user to review the written spec.
+10. Create a lightweight golden-program plan.
+11. Implement the golden program.
+12. Verify it against the design doc examples and boundary cases.
+13. Ask the user to review the golden program.
 
 ## Business Gap Ledger
 
@@ -185,10 +188,33 @@ Design-doc requirements:
 - Every critical rule should be traceable to either the source document or a clarification decision.
 - If the source document is vague, the design doc must make the chosen interpretation explicit.
 - Do not hide unresolved ambiguity inside broad wording.
+- Do not leave `TODO`, `TBD`, placeholders, or deferred decisions in the spec.
+- Make ordering, determinism, invalid-input behavior, and boundary behavior explicit when they affect visible output.
+
+### Written Spec
+
+After the user approves the design doc draft:
+
+1. Write it as a markdown spec file
+2. Use a stable path such as `docs/business-specs/YYYY-MM-DD-<topic>-design.md` unless the user prefers another location
+3. Run the spec review loop using `references/spec-document-reviewer-prompt.md`
+4. Revise and re-review until approved
+5. Ask the user to review the written spec before moving to the golden program
+
+## Spec Review Loop
+
+After writing the spec file:
+
+1. Dispatch a focused spec reviewer subagent using the template in `references/spec-document-reviewer-prompt.md`
+2. Isolate context: provide only the spec path and minimum task-local review context needed to evaluate the written spec
+3. Never pass full session history, hidden reasoning, or your own intended conclusions into the review context
+4. If the reviewer returns `Issues Found`, revise and re-dispatch
+5. Repeat until `Approved`, with a maximum of 3 review iterations
+6. If still blocked after 3 iterations, surface the unresolved issues to the user
 
 ## Golden Program Stage
 
-After the user approves the design doc:
+After the user approves the written and reviewed spec:
 
 1. Create a lightweight plan covering:
    - public entrypoint

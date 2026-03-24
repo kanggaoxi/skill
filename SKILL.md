@@ -1,6 +1,6 @@
 ---
 name: business-spec-to-golden
-description: "Transform requirements into design docs and golden programs. Ask ONE question at a time during clarification. Three stages: Clarify → Design Doc → Golden Program."
+description: "Transform requirements into reviewed implementation design docs and golden programs. Ask ONE question at a time during clarification. Design doc must be written as a markdown spec and reviewed before golden generation."
 ---
 
 # Requirements to Design Doc and Golden Program
@@ -9,7 +9,7 @@ Transform rough requirements into a detailed design document and golden referenc
 
 ## HARD-GATE
 
-**Stage Order**: Clarify → Design Doc → Golden Program. Never skip or reorder.
+**Stage Order**: Clarify → Design Doc → Spec Review → Golden Program. Never skip or reorder.
 
 **Single Question Rule**: Ask ONE question at a time. Wait for answer before next question.
 
@@ -17,7 +17,7 @@ Transform rough requirements into a detailed design document and golden referenc
 
 **Scope Control**: For multi-system documents, decompose and process one slice at a time.
 
-**Gates**: Require user approval at: (1) after business summary, (2) after design doc, (3) after golden program.
+**Gates**: Require user approval at: (1) after business summary, (2) after design doc draft, (3) after written/reviewed spec, (4) after golden program.
 
 ---
 
@@ -138,25 +138,58 @@ Confirm: "To confirm: [restatement]. Correct?"
 
 ## Design Doc Stage
 
-After user confirms business summary, write design doc with this structure:
+After user confirms business summary, write the implementation design doc with this structure:
 
 1. **Objective** - Business outcome and success criteria
-2. **Domain Model** - Entities and their business meaning
-3. **Input Contract** - Required/optional fields, ranges, units
-4. **Output Contract** - Structure, semantics, ordering
-5. **Decision Rules** - Business rules in precedence order
-6. **Processing Flow** - Step-by-step transformation
-7. **Edge Cases** - Boundary and error handling
-8. **Examples** - Input/output pairs (normal and edge cases)
-9. **Acceptance Criteria** - What correct implementation must do
+2. **Scope** - In-scope slice and explicit out-of-scope items
+3. **Domain Model** - Entities and their business meaning
+4. **Input Contract** - Required/optional fields, ranges, units, invariants
+5. **Output Contract** - Structure, semantics, ordering, interpretation
+6. **Decision Rules** - Business rules in strict precedence order
+7. **Processing Flow** - Step-by-step transformation with enough precision to implement
+8. **Edge and Failure Cases** - Boundary, invalid, duplicate, partial, and extreme cases
+9. **Examples** - Input/output pairs covering normal, edge, and conflict cases
+10. **Clarification Decisions** - Key question-answer outcomes and accepted assumptions
+11. **Acceptance Criteria** - What correct implementation must do
 
 Goal: Two engineers reading this would produce the same implementation.
 
+### Spec Quality Bar
+
+Before moving on, the design doc must satisfy ALL of these:
+
+- No `TODO`, `TBD`, placeholders, or "decide later" wording
+- No hidden ambiguity inside broad wording such as "handle appropriately"
+- Every critical rule is traceable to either the source document or a clarification decision
+- Rule precedence, ordering, invalid-input behavior, and boundary behavior are explicit
+- Examples are strong enough to anchor expected output behavior
+
+### Written Spec
+
+After presenting the design doc and getting user approval on the draft:
+
+1. Write it as a markdown spec file
+2. Use a stable path such as `docs/business-specs/YYYY-MM-DD-<topic>-design.md` unless the user prefers another location
+3. Run a spec review loop using `references/spec-document-reviewer-prompt.md`
+4. If issues are found, fix the spec and re-review it
+5. Ask the user to review the written spec file before starting the golden program
+
 ---
+
+## Spec Review Loop
+
+After writing the spec file:
+
+1. Dispatch a focused spec reviewer subagent using the prompt template in `references/spec-document-reviewer-prompt.md`
+2. Isolate context: provide only the spec path and the minimum task-local review context needed to evaluate the written spec
+3. Never pass full session history, hidden reasoning, or your own intended conclusions into the review context
+4. If the reviewer returns `Issues Found`, revise the spec and re-dispatch
+5. Repeat until `Approved`, with a maximum of 3 review iterations
+6. If the loop still fails after 3 iterations, surface the unresolved issues to the user
 
 ## Golden Program Stage
 
-After user approves design doc:
+After user approves the written and reviewed spec:
 
 1. Create lightweight plan (entrypoint, modules, verification approach)
 2. Implement with these rules:
@@ -164,6 +197,7 @@ After user approves design doc:
    - Self-contained implementation
    - Brief comments linking to design doc
    - Verify against design doc examples
+   - Verify against boundary and failure cases from the spec
    - Surface remaining ambiguities instead of guessing
 
 ---
