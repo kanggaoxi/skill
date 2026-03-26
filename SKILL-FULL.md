@@ -1,6 +1,6 @@
 ---
 name: business-spec-to-golden
-description: Turn rough business requirements into a clarified, reviewed implementation design spec and a correctness-first golden program. Work from global understanding to local clarification: extract document structure, build a tiered gap inventory, align overall I/O and module relationships, confirm each tier, then generate a reviewed spec and golden program.
+description: "Turn rough business requirements into a clarified, reviewed implementation design spec and a correctness-first golden program. Work from global understanding to local clarification: extract document structure, build a tiered gap inventory, align overall I/O and module relationships, confirm each tier, then generate a reviewed spec and golden program."
 ---
 
 # Business Spec to Design Spec and Golden Program

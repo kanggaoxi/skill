@@ -4,11 +4,12 @@ A Claude Code Skill that transforms requirement documents into detailed design s
 
 ## Overview
 
-This Skill helps you convert ambiguous requirements, business, or design documents (in markdown or notes form) into:
+This Skill helps you convert ambiguous requirements, business, or design documents into:
 
-1. **Clarified Business Understanding** - Identify and resolve ambiguities in requirements
-2. **Detailed Design Document** - Implementation-ready specification
-3. **Golden Reference Program** - A readable, correctness-focused reference implementation
+1. **Document Understanding Notes** - Externalized interpretation of the source
+2. **Clarified Business Understanding** - From global structure to local detail
+3. **Reviewed Design Spec** - Implementation-ready specification with quality checks
+4. **Golden Reference Program** - A correctness-focused reference implementation
 
 ## Two Versions
 
@@ -16,8 +17,8 @@ This skill provides two versions for different model capabilities:
 
 | Version | File | Lines | Target Models |
 |---------|------|-------|---------------|
-| **General** | `SKILL.md` | 176 | All models, especially weaker ones |
-| **Full** | `SKILL-FULL.md` | 221 | Strong models (GLM 5+, Claude, GPT-4) |
+| **General** | `SKILL.md` | ~250 | All models, especially weaker ones |
+| **Full** | `SKILL-FULL.md` | ~338 | Strong models (GLM 5+, Claude, GPT-4) |
 
 ### When to Use Which Version
 
@@ -33,14 +34,12 @@ This skill provides two versions for different model capabilities:
 
 | Feature | SKILL.md (General) | SKILL-FULL.md (Full) |
 |---------|-------------------|----------------------|
-| Few-shot Examples | ✓ 5 examples | ✗ |
-| Pre-Question Checklist | ✓ | ✓ |
-| Error Recovery | ✓ | ✓ |
-| Business Gap Ledger | ✗ | ✓ P0/P1/P2 priority |
-| 10-step Workflow | ✗ | ✓ |
+| Tiered Gap Ledger | Simplified | Full P0/P1/P2 table |
 | Clarification Exit Criteria | ✗ | ✓ |
-| Design Doc Traceability | ✗ | ✓ |
-| Golden Correctness Rules | Basic | Strict |
+| Tier Summary Templates | Simplified | Detailed |
+| Error Recovery | 4 violations | 5 violations |
+| Pre-Question Checklist | ✓ | ✓ |
+| Spec Review Loop | ✓ | ✓ |
 
 ### How to Switch Versions
 
@@ -70,39 +69,48 @@ Here's my product requirements document [attach document]. Please help me unders
 ## Workflow
 
 ```
-Read Requirements → Identify Business Gaps → Clarify Questions One-by-One → User Confirms Understanding
-                                                                                    ↓
-User Reviews Golden Program ← Implement Golden Program ← Create Implementation Plan ← User Approves Design Doc
+Document Understanding → Global Alignment → Local Clarification → Boundary Clarification
+                                                                              ↓
+User Reviews Golden ← Implement Golden ← Written Spec ← Design Doc ← Spec Review
 ```
 
-### Three Stages
+### Seven Stages
 
 | Stage | Output |
 |-------|--------|
-| **Clarify** | Clarified business logic understanding |
-| **Write Spec** | Detailed design document |
-| **Build Golden Program** | Executable reference implementation |
+| **Document Understanding** | Understanding notes with structure, modules, and open questions |
+| **Global Alignment** | Overall I/O, module relationships, in-scope slice selection |
+| **Local Clarification** | Slice-specific logic, decision rules, examples |
+| **Boundary Clarification** | Edge cases, failure behavior, invalid input handling |
+| **Design Doc** | 13-section implementation specification |
+| **Spec Review** | Automated review loop (max 3 iterations) |
+| **Golden Program** | Executable reference implementation |
 
 ## Design Document Structure
 
-The generated design document includes:
+The generated design document includes 13 sections:
 
 - **Objective** - Business goals and success criteria
+- **Scope** - In-scope slice and explicit out-of-scope items
+- **Document Understanding** - High-level structure of the source
+- **Global Flow** - Overall inputs, outputs, and module relationships
 - **Domain Model** - Domain entities and their business meaning
-- **Input Contract** - Input data specification
-- **Output Contract** - Output data specification
-- **Decision Rules** - Business decision rules (in priority order)
-- **Processing Flow** - End-to-end processing steps
-- **Edge Cases** - Boundary condition handling
-- **Examples** - Input/output examples
+- **Input Contract** - Input data specification with invariants
+- **Output Contract** - Output data specification with interpretation
+- **Decision Rules** - Business rules in strict precedence order
+- **Processing Flow** - Step-by-step transformation
+- **Edge and Failure Cases** - Boundary and error handling
+- **Examples** - Input/output pairs for normal, edge, and conflict cases
+- **Clarification Decisions** - Key Q&A outcomes and accepted assumptions
 - **Acceptance Criteria** - Verification standards
 
 ## Key Features
 
+- **Global Before Local** - Align overall structure before diving into details
+- **Externalize State** - Write understanding to markdown, reduce memory dependence
+- **Tiered Clarification** - Global → Local → Boundary, with approval gates
 - **Single Question Rule** - Ask ONE question at a time, wait for answer
-- **Business Focus** - Questions about business meaning, not engineering choices
-- **Self-Check Mechanisms** - Pre-question checklist and error recovery
-- **Gate Mechanism** - No code is written until design document is approved
+- **Spec Review Loop** - Automated quality check before golden program
 - **Correctness First** - Golden program prioritizes correctness over performance
 
 ## Use Cases
@@ -117,9 +125,12 @@ The generated design document includes:
 **Input**: A product document describing promotion rules
 
 **Output**:
-1. Clarified promotion rules (discount stacking order, boundary conditions, etc.)
-2. Detailed promotion engine design document
-3. Runnable promotion calculation reference program
+1. Understanding notes (document structure, module inventory, open questions)
+2. Global alignment (overall inputs/outputs, flow diagram)
+3. Local clarification (slice-specific rules and examples)
+4. Boundary clarification (edge cases and failure handling)
+5. Reviewed design specification
+6. Runnable promotion calculation reference program
 
 ## Files
 
@@ -127,7 +138,9 @@ The generated design document includes:
 business-spec-to-golden/
 ├── SKILL.md          # General version (default)
 ├── SKILL-FULL.md     # Full version for strong models
-└── README.md         # This file
+├── README.md         # This file
+└── references/
+    └── spec-document-reviewer-prompt.md  # Spec review template
 ```
 
 ## License
