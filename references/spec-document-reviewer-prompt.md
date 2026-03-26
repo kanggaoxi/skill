@@ -22,7 +22,7 @@ Task tool (general-purpose):
     | Consistency | Internal contradictions, conflicting rules, examples that disagree with rules |
     | Clarity | Requirements ambiguous enough that two engineers could implement different visible behavior |
     | Traceability | Critical rules not grounded in either the source doc or clarification decisions |
-    | Executability | Missing boundary behavior, invalid-input behavior, ordering, precedence, or output interpretation needed to write the golden program |
+    | Executability | Missing global flow, inter-module handoffs, boundary behavior, invalid-input behavior, ordering, precedence, or output interpretation needed to write the golden program |
     | Scope | Spec tries to cover multiple independent subsystems instead of one focused slice |
 
     ## Calibration

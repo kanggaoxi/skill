@@ -1,23 +1,25 @@
 ---
 name: business-spec-to-golden
-description: "Transform requirements into reviewed implementation design docs and golden programs. Ask ONE question at a time during clarification. Design doc must be written as a markdown spec and reviewed before golden generation."
+description: "Transform requirements into reviewed implementation design specs and golden programs. Work from global understanding to local clarification: extract document structure, align overall inputs/outputs and module relationships, then clarify one business question at a time before spec and golden generation."
 ---
 
-# Requirements to Design Doc and Golden Program
+# Requirements to Design Spec and Golden Program
 
-Transform rough requirements into a detailed design document and golden reference implementation through structured clarification.
+Transform a rough requirements or design document into a reviewed implementation spec and a golden reference implementation through staged clarification.
 
 ## HARD-GATE
 
-**Stage Order**: Clarify → Design Doc → Spec Review → Golden Program. Never skip or reorder.
+**Stage Order**: Document Understanding → Global Alignment → Local Clarification → Boundary Clarification → Design Doc → Spec Review → Golden Program. Never skip or reorder.
 
-**Single Question Rule**: Ask ONE question at a time. Wait for answer before next question.
+**Single Question Rule**: Ask ONE business question at a time. Wait for answer before next question.
 
-**Business Focus**: Ask about business meaning, rules, and edge cases. Do NOT ask about engineering choices.
+**Business Focus**: Ask about business meaning, inputs/outputs, module relationships, rules, and edge cases. Do NOT ask about engineering choices during clarification.
 
-**Scope Control**: For multi-system documents, decompose and process one slice at a time.
+**Scope Control**: For multi-module or multi-system documents, first identify the whole structure, then pick one in-scope slice for this pass.
 
-**Gates**: Require user approval at: (1) after business summary, (2) after design doc draft, (3) after written/reviewed spec, (4) after golden program.
+**Externalize State**: Before asking detailed questions, write down your understanding and open gaps in markdown notes so key conclusions do not depend on model memory alone.
+
+**Gates**: Require user approval at: (1) document understanding summary, (2) global alignment summary, (3) local clarification summary, (4) boundary/failure summary, (5) design doc draft, (6) written/reviewed spec, (7) golden program.
 
 ---
 
@@ -25,20 +27,21 @@ Transform rough requirements into a detailed design document and golden referenc
 
 Before each question, check and state:
 
-```
-State: Question #N | Waiting: Yes/No | Resolved: X gaps | Remaining: Y gaps
+```text
+State: Tier [Understanding|Global|Local|Boundary] | Question #N | Waiting: Yes/No | Open: Critical=X, Important=Y, Minor=Z
 ```
 
-If "Waiting: Yes" → STOP. Wait for user answer.
+If `Waiting: Yes` → STOP. Wait for user answer.
 
 ## Pre-Question Checklist
 
 Ask yourself before each question:
 
 - [ ] Not currently waiting for an answer
-- [ ] This is a business question (not engineering)
-- [ ] This is ONE question (not multiple)
-- [ ] Not a duplicate of resolved question
+- [ ] This is a business question, not an implementation question
+- [ ] This is ONE question, not a batch
+- [ ] The question belongs to the current clarification tier
+- [ ] The gap is not already confirmed
 
 Only proceed if ALL checked.
 
@@ -51,106 +54,140 @@ If you violate a rule:
 | Asked multiple questions | Acknowledge, ask only the first one |
 | Asked duplicate question | Acknowledge, skip to next gap |
 | Asked engineering question | Acknowledge, rephrase as business question |
+| Skipped a higher-tier gap | Acknowledge, return to the unresolved higher-tier gap |
 
 ---
 
-## Examples
+## Stage 1: Document Understanding
 
-### ✓ Correct: Single Question
+Before asking detailed clarification questions:
 
-```
-State: Question #1 | Waiting: No | Resolved: 0 gaps | Remaining: 5 gaps
+1. Read the source document and extract its structure
+2. Identify the major modules, branches, and flows it appears to describe
+3. Identify what is already explicit about overall inputs, outputs, and relationships
+4. Identify what is still ambiguous
+5. Write this into a markdown notes file such as `docs/business-specs/YYYY-MM-DD-<topic>-understanding.md` unless the user prefers another location
 
-**Context**: "强度等级：弱/中/强"
+The understanding notes should include:
 
-**Question**: 边界值6和12属于哪个等级？
+1. **Document Structure** - sections, modules, or major flows mentioned in the source
+2. **Current Business Understanding** - what the system appears to do overall
+3. **Module Inventory** - the candidate submodules or processing steps
+4. **Known Global Inputs and Outputs** - anything already explicit in the source
+5. **Known Relationships** - which modules appear parallel, serial, optional, or conditional
+6. **Open Questions by Tier** - grouped into Global, Local, and Boundary
 
-**Why it matters**: 不同归属会导致"123abc"（长度6）判定结果不同。
-
-**Options**:
-A. 闭区间 [6,12]，6和12都属"中"
-B. 半开区间 [6,12)，6属"中"，12属"强"
-```
-
-### ✗ Wrong: Multiple Questions
-
-```
-**Questions**:
-1. 边界值6属于哪个等级？
-2. 特殊字符有哪些？
-3. 空密码怎么处理？
-```
-→ **Violation**: Batched 3 questions. User may miss some.
-
-### ✗ Wrong: Engineering Question
-
-```
-**Question**: 用正则还是字符遍历检测字符类型？
-```
-→ **Violation**: Engineering choice, not business meaning.
-
-### ✓ Correct: Answer Confirmation
-
-```
-User: A
-
-Agent: To confirm: 边界值6和12都属于"中"等级（闭区间）。正确吗？
-```
-
-### ✓ Correct: Error Recovery
-
-```
-Agent: 我刚才一次问了多个问题，违反了规则。让我重新问第一个：
-
-**Question**: 边界值6和12属于哪个等级？
-```
+Before moving on, present a concise understanding summary and ask the user to confirm or correct it.
 
 ---
 
-## Clarification Stage
+## Stage 2: Global Alignment
 
-### Priority Order
+Resolve the coarse-grained business structure before drilling into a specific submodule.
 
-1. **Goal & Meaning**: What outcome? What do inputs/outputs mean?
-2. **Rules**: How do inputs map to outputs? Which rule wins on conflict?
-3. **Boundaries**: Empty/invalid input? Missing fields? Min/max values?
-4. **Context**: Time-sensitive? State-dependent? Volume constraints?
+Prioritize these questions first:
 
-### Question Format
+1. **Overall Inputs** - What external inputs exist? What are their formats and semantics?
+2. **Overall Outputs** - What outputs exist? What are their formats and semantics?
+3. **Module Decomposition** - What submodules or processing steps are in scope overall?
+4. **Relationships** - Which modules are parallel, serial, optional, or conditional?
+5. **Inter-Module Handoffs** - For serial flows, what output of one module becomes input to the next?
+6. **In-Scope Slice** - Which branch, path, or submodule is being implemented in this pass?
 
+After these are clear enough, produce a concise global alignment summary that includes:
+
+1. In-scope slice
+2. Overall input contract for the relevant flow
+3. Overall output contract for the relevant flow
+4. Module relationships
+5. A simple textual dataflow or flowchart-style view
+
+Example:
+
+```text
+Input A + Input B
+  -> Module M1
+  -> Module M2
+  -> Branch:
+     - Path X -> Module M3 -> Output X
+     - Path Y -> Module M4 -> Output Y
 ```
-**Context**: "[Quote from document]"
 
-**Question**: [Single specific business question]
+Ask the user to approve this global picture before moving to local questions.
 
-**Why it matters**: [Correctness impact]
+---
+
+## Stage 3: Local Clarification
+
+Only after the global structure is aligned, clarify the in-scope slice itself.
+
+Prioritize local questions in this order:
+
+1. **Slice Input Semantics** - What exactly enters this slice?
+2. **Slice Output Semantics** - What exactly must this slice produce?
+3. **Transformation Logic** - How does the slice derive output from input?
+4. **Decision Rules** - Which rule wins on conflict? What order is applied?
+5. **Dependencies** - Which upstream results are required? Which downstream consumer assumptions matter?
+6. **Representative Examples** - Concrete examples that lock down intended behavior
+
+When the local logic is clarified, provide a local clarification summary and ask the user to approve it before moving to boundaries.
+
+---
+
+## Stage 4: Boundary Clarification
+
+After the main flow is clear, ask about:
+
+1. Empty or missing input
+2. Invalid or unsupported values
+3. Duplicate or conflicting records
+4. Min/max and threshold boundaries
+5. Ordering and determinism requirements
+6. Failure behavior and visible error handling
+
+Then summarize the confirmed boundary and failure behavior and ask for approval.
+
+---
+
+## Question Format
+
+```markdown
+**Context**: "[Quote or paraphrase from the document or understanding notes]"
+
+**Tier**: [Global|Local|Boundary]
+
+**Question**: [One specific business question]
+
+**Why it matters**: [How different answers would change visible behavior]
 
 **Options** (if applicable):
 A. ...
 B. ...
 ```
 
-### After Answer
+After the user answers, confirm with:
 
-Confirm: "To confirm: [restatement]. Correct?"
+`To confirm: [precise restatement]. Correct?`
 
 ---
 
 ## Design Doc Stage
 
-After user confirms business summary, write the implementation design doc with this structure:
+After the user approves the staged clarification summaries, write the implementation design doc with this structure:
 
 1. **Objective** - Business outcome and success criteria
 2. **Scope** - In-scope slice and explicit out-of-scope items
-3. **Domain Model** - Entities and their business meaning
-4. **Input Contract** - Required/optional fields, ranges, units, invariants
-5. **Output Contract** - Structure, semantics, ordering, interpretation
-6. **Decision Rules** - Business rules in strict precedence order
-7. **Processing Flow** - Step-by-step transformation with enough precision to implement
-8. **Edge and Failure Cases** - Boundary, invalid, duplicate, partial, and extreme cases
-9. **Examples** - Input/output pairs covering normal, edge, and conflict cases
-10. **Clarification Decisions** - Key question-answer outcomes and accepted assumptions
-11. **Acceptance Criteria** - What correct implementation must do
+3. **Document Understanding** - High-level structure and the chosen slice's place in it
+4. **Global Flow** - Overall inputs, outputs, branches, module relationships, and inter-module handoffs
+5. **Domain Model** - Entities and their business meaning
+6. **Input Contract** - Required/optional fields, ranges, units, invariants
+7. **Output Contract** - Structure, semantics, ordering, interpretation
+8. **Decision Rules** - Business rules in strict precedence order
+9. **Processing Flow** - Step-by-step transformation with enough precision to implement
+10. **Edge and Failure Cases** - Boundary, invalid, duplicate, partial, and extreme cases
+11. **Examples** - Input/output pairs covering normal, edge, and conflict cases
+12. **Clarification Decisions** - Key question-answer outcomes and accepted assumptions
+13. **Acceptance Criteria** - What correct implementation must do
 
 Goal: Two engineers reading this would produce the same implementation.
 
@@ -161,6 +198,7 @@ Before moving on, the design doc must satisfy ALL of these:
 - No `TODO`, `TBD`, placeholders, or "decide later" wording
 - No hidden ambiguity inside broad wording such as "handle appropriately"
 - Every critical rule is traceable to either the source document or a clarification decision
+- Overall flow and inter-module relationships are explicit for the in-scope slice
 - Rule precedence, ordering, invalid-input behavior, and boundary behavior are explicit
 - Examples are strong enough to anchor expected output behavior
 
@@ -195,8 +233,8 @@ After user approves the written and reviewed spec:
 2. Implement with these rules:
    - Optimize for correctness and readability
    - Self-contained implementation
-   - Brief comments linking to design doc
-   - Verify against design doc examples
+   - Brief comments linking to the spec
+   - Verify against examples from the spec
    - Verify against boundary and failure cases from the spec
    - Surface remaining ambiguities instead of guessing
 
@@ -205,6 +243,7 @@ After user approves the written and reviewed spec:
 ## Output
 
 When complete:
-1. Clarified business understanding (user-confirmed)
-2. Detailed design document
-3. Readable golden reference program
+1. Document understanding notes
+2. Clarified business understanding (user-confirmed, from global to local)
+3. Detailed reviewed design spec
+4. Readable golden reference program
