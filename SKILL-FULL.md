@@ -1,6 +1,6 @@
 ---
 name: business-spec-to-golden
-description: "Turn rough business requirements into a clarified, reviewed implementation design spec and a correctness-first golden program. Work from global understanding to local clarification: extract document structure, build a tiered gap inventory, align overall I/O and module relationships, confirm each tier, then generate a reviewed spec and golden program."
+description: "Turn rough business requirements into a clarified, reviewed implementation design spec and a test-validated golden program. Enforce file-first question ledger (P0/P1/P2), tiered intermediate outputs, automated spec review, and test-driven golden program development."
 ---
 
 # Business Spec to Design Spec and Golden Program
@@ -8,330 +8,486 @@ description: "Turn rough business requirements into a clarified, reviewed implem
 Transform a rough requirement document into:
 
 1. A documented understanding of the source document
-2. A clarified and reviewed implementation design spec
-3. A readable golden reference program
+2. A file-based question ledger with P0/P1/P2 tiering
+3. Tiered intermediate outputs (global flow, submodule design, boundary rules)
+4. A reviewed implementation design spec
+5. Test cases with CLI entry
+6. A golden reference program that passes all tests
 
 ## Hard Gates
 
-- **Stage Order**: Document Understanding → Global Alignment → Local Clarification → Boundary Clarification → Design Doc → Spec Review → Golden Program. Never skip or reorder.
+- **Stage Order**: Document Understanding → Question Ledger → P0 Clarification → P1 Clarification → P2 Clarification → Design Doc → Spec Review → User Review → Test Cases → Golden Program. Never skip or reorder.
 - **Single Question Rule**: Ask exactly one business question at a time. Wait for the answer before asking the next one.
-- **Business Focus**: Ask about business meaning, overall inputs/outputs, module relationships, decision rules, examples, boundaries, and failure behavior. Do not ask engineering choices unless the user explicitly asks for them.
-- **No Silent Assumptions**: Do not invent missing business rules and quietly continue. Resolve them with the user, or list them as explicit assumptions and get acceptance before proceeding.
-- **Global Before Local**: Do not ask detailed submodule questions until the overall structure, scope, and inter-module flow for the in-scope slice are aligned.
-- **Externalize State**: Write the understanding, gap inventory, and confirmed summaries into markdown notes so key decisions do not depend on model memory alone.
-- **Approval Gates**: Require user approval after the document understanding summary, after the global alignment summary, after the local clarification summary, after the boundary/failure summary, after the design doc draft, after the written/reviewed spec, and after the golden program.
-- **Correctness First**: Optimize the golden program for correctness, determinism, and auditability before convenience or performance.
+- **File-First Rule**: Every question MUST come from the question ledger file. Read the file before asking any question. Update the file after each answer. Never ask from memory.
+- **Business Focus**: Ask about business meaning, inputs/outputs, module relationships, decision rules, examples, boundaries, and failure behavior. Do not ask engineering choices.
+- **No Silent Assumptions**: Do not invent missing business rules. Resolve with user or list as explicit assumptions.
+- **Externalize Everything**: All understanding, questions, intermediate outputs, and summaries MUST be written to markdown files.
+- **Approval Gates**: Require user approval after document understanding, after each tier's intermediate output (P0/P1/P2), after design doc, after test cases, and after golden program.
+- **Test-Driven Golden**: The golden program must pass all test cases before delivery.
+
+## Output Files
+
+All outputs go to `docs/business-specs/YYYY-MM-DD-<topic>-*` unless user specifies otherwise:
+
+| Stage | Output File | Content |
+|-------|-------------|---------|
+| Understanding | `*-understanding.md` | Document structure, module inventory, known I/O, relationships |
+| Question Ledger | `*-questions.md` | P0/P1/P2 questions with status, priority, and answers |
+| P0 Output | `*-global-flow.md` | Flow diagrams, I/O contracts, module relationships |
+| P1 Output | `*-submodule-design.md` | Each submodule's input/output/transform logic |
+| P2 Output | `*-boundary-rules.md` | Boundary rules, exception handling rules |
+| Design Doc | `*-design.md` | Full implementation spec |
+| Test Cases | `*-test.js` or `*-test.py` | Test file with CLI entry |
 
 ## Workflow
 
-1. Read the source document and any immediately relevant local context.
-2. Extract the document structure and write understanding notes.
-3. Build a **Tiered Business Gap Ledger**.
-4. If needed, decompose scope and pick one slice.
-5. Align the global picture for the in-scope slice.
-6. Ask one business question at a time within the current tier until that tier is ready to summarize.
-7. Summarize the current tier and get user approval before moving deeper.
-8. Repeat for Local Clarification, then Boundary Clarification.
-9. Write the design doc and get user approval on the draft.
-10. Save the design doc as a markdown spec file.
-11. Run the spec review loop and fix issues until approved.
-12. Ask the user to review the written spec.
-13. Create a lightweight golden-program plan.
-14. Implement the golden program.
-15. Verify it against the spec examples, flow relationships, and boundary cases.
-16. Ask the user to review the golden program.
+1. Read the source document and write understanding notes.
+2. Build the question ledger with P0/P1/P2 questions.
+3. P0 Clarification: ask from file, update file, produce global-flow output.
+4. P1 Clarification: ask from file, update file, produce submodule-design output.
+5. P2 Clarification: ask from file, update file, produce boundary-rules output.
+6. Write the full design doc.
+7. Run spec review loop (subagent).
+8. User reviews and approves the spec.
+9. Design and write test cases with CLI entry.
+10. User confirms test cases.
+11. Implement golden program with test-driven iteration.
+12. Deliver golden program that passes all tests.
 
-## Document Understanding Notes
+---
 
-Before asking detailed clarification questions, write a markdown notes file such as:
+## Stage 1: Document Understanding
 
-`docs/business-specs/YYYY-MM-DD-<topic>-understanding.md`
+Before asking any clarification questions:
 
-unless the user prefers another location.
+1. Read the source document and extract its structure
+2. Identify major modules, branches, and flows
+3. Identify what is already explicit about inputs, outputs, relationships
+4. Write understanding notes to `*-understanding.md`
 
-The understanding notes should include:
+Understanding notes structure:
 
-1. **Document Structure** - sections, modules, branches, flows, or processing stages named in the source
-2. **Current Business Understanding** - what the overall system appears to do
+1. **Document Structure** - sections, modules, flows, processing stages
+2. **Current Business Understanding** - what the system appears to do overall
 3. **Module Inventory** - candidate submodules or processing steps
-4. **Known Global Inputs** - inputs explicitly described in the source, with formats and semantics if known
-5. **Known Global Outputs** - outputs explicitly described in the source, with formats and semantics if known
-6. **Known Relationships** - which modules appear serial, parallel, optional, conditional, or mutually exclusive
-7. **Open Questions by Tier** - grouped into Global, Local, and Boundary
+4. **Known Global Inputs** - inputs described in source, with formats if known
+5. **Known Global Outputs** - outputs described in source, with formats if known
+6. **Known Relationships** - which modules are serial, parallel, optional, conditional
+7. **Initial Open Questions** - preliminary list of ambiguities
 
-Before entering the question loop, present a concise document understanding summary and ask the user to confirm or correct it.
+Present a concise understanding summary and ask the user to confirm or correct it.
 
-## Tiered Business Gap Ledger
+---
 
-Before asking questions, identify the business gaps that affect correctness.
+## Stage 2: Question Ledger
 
-Track them mentally or explicitly in a compact table with these fields:
+Build a complete question ledger and write to `*-questions.md`.
 
-| Field | Meaning |
-|------|---------|
-| `ID` | Stable gap label such as `G1`, `G2` |
-| `Tier` | `Global`, `Local`, or `Boundary` |
-| `Source` | Quote or section from the input document |
-| `Gap` | What is ambiguous or missing |
-| `Risk` | Why this affects correctness |
-| `Priority` | `P0`, `P1`, or `P2` |
-| `Status` | `open`, `answered`, `confirmed`, `accepted-assumption` |
+### P0: Global Level
 
-Priority guidance:
+Questions about the overall system structure:
 
-- **P0**: A wrong answer would likely change core output behavior or the structure of the in-scope flow.
-- **P1**: A wrong answer would change edge-case, failure behavior, or inter-module handoff details.
-- **P2**: Helpful detail, but not a likely blocker for a correct first implementation.
+1. **Overall Input Formats** - What are the formats and semantics of all inputs?
+2. **Overall Output Formats** - What are the formats and semantics of all outputs?
+3. **I/O Contracts** - What guarantees and constraints apply to inputs/outputs?
+4. **Submodule List** - What submodules or processing steps exist?
+5. **Execution Order** - In what order do submodules execute?
+6. **Inter-Module Dataflow** - What data passes between modules?
 
-## Scope Control
+### P1: Submodule Level
 
-If the document describes multiple business areas, do not attempt one giant pass.
+Questions about each submodule's implementation:
 
-First produce a compact decomposition:
+1. **Submodule Input** - What exactly does this module receive?
+2. **Submodule Output** - What exactly must this module produce?
+3. **Transform Logic** - How does it derive output from input?
+4. **Decision Rules** - Which rule wins on conflict?
+5. **Dependencies** - What does it need from other modules?
 
-- Slices or subsystems
-- Which slice should be handled now
-- What is explicitly out of scope for this pass
-- Which upstream and downstream modules still matter for this slice
+### P2: Boundary & Exception
 
-Then continue with a single in-scope slice only.
+Questions about edge cases and errors:
 
-## Clarification Tiers
+1. **Empty/Missing Input** - How to handle?
+2. **Invalid Values** - What is invalid, what happens?
+3. **Boundary Values** - Min/max, inclusive/exclusive thresholds?
+4. **Duplicate Data** - Merge, reject, or error?
+5. **Exception Handling** - What errors to surface, how?
 
-### Tier 1: Global Alignment
-
-Resolve the coarse-grained business structure before drilling into a specific submodule.
-
-Prioritize gaps in this order:
-
-1. **Overall objective and success meaning**: What overall business outcome is considered correct?
-2. **Overall input semantics**: What external inputs exist? What do they mean? What are their formats?
-3. **Overall output semantics**: What outputs exist? What do they mean? What are their formats?
-4. **Module decomposition**: What submodules, branches, or stages exist in the relevant flow?
-5. **Relationships**: Which modules are serial, parallel, optional, conditional, or mutually exclusive?
-6. **Inter-module handoffs**: For serial flows, what output of one module becomes input to the next?
-7. **In-scope slice selection**: Which branch, path, or submodule is being implemented in this pass?
-
-Before moving on, produce a **Global Alignment Summary** that includes:
-
-1. In-scope slice
-2. Overall input contract for the relevant flow
-3. Overall output contract for the relevant flow
-4. Module inventory for the relevant flow
-5. Confirmed relationships between modules
-6. A simple textual dataflow or flowchart-style diagram
-7. Explicit accepted assumptions, if any
-
-Example:
-
-```text
-Input A + Input B
-  -> Module M1
-  -> Branch:
-     - Path X -> Module M2 -> Output X
-     - Path Y -> Module M3 -> Module M4 -> Output Y
-```
-
-Ask the user to approve this global picture before moving to local questions.
-
-### Tier 2: Local Clarification
-
-Only after the global structure is aligned, clarify the in-scope slice itself.
-
-Prioritize gaps in this order:
-
-1. **Slice input semantics**: What exactly enters this slice, from where, and in what format?
-2. **Slice output semantics**: What exactly must this slice produce, for whom, and in what format?
-3. **Transformation logic**: How does the slice derive output from input?
-4. **Decision rules and precedence**: How do rules interact, and which rule wins on conflict?
-5. **Upstream/downstream dependencies**: Which assumptions from neighboring modules affect this slice?
-6. **Representative examples**: Concrete examples that lock down intended behavior
-
-Before moving on, produce a **Local Clarification Summary** that includes:
-
-1. Slice purpose
-2. Slice input contract
-3. Slice output contract
-4. Confirmed transformation logic
-5. Decision rules in precedence order
-6. Dependencies on upstream or downstream modules
-7. Explicit accepted assumptions, if any
-
-Ask the user to approve this local picture before moving to boundary questions.
-
-### Tier 3: Boundary Clarification
-
-After the main flow is clear, ask about:
-
-1. Empty or missing input
-2. Invalid or unsupported values
-3. Duplicate or conflicting records
-4. Min/max, thresholds, and boundary inclusivity
-5. Ordering and determinism requirements
-6. Failure behavior and visible error handling
-7. Extreme or conflict cases involving upstream/downstream assumptions
-
-Before moving on, produce a **Boundary and Failure Summary** and ask the user to approve it.
-
-## Pre-Question Checklist
-
-Before asking ANY question, verify ALL of the following:
-
-- [ ] I am NOT currently waiting for an answer to a previous question
-- [ ] This is a BUSINESS question (not about libraries, architecture, or implementation)
-- [ ] This is ONE question (not multiple questions bundled together)
-- [ ] The question belongs to the current clarification tier
-- [ ] This is NOT a duplicate of an already-confirmed gap
-- [ ] No unresolved higher-tier `P0` gap should block this question
-
-**If any box is unchecked, STOP and fix before proceeding.**
-
-## Question Format
-
-Before each question, state:
-
-```text
-State: Tier [Global|Local|Boundary] | Question #N | Waiting: Yes/No | Open: P0=X, P1=Y, P2=Z
-```
-
-If `Waiting: Yes`, stop and wait.
-
-Ask using this format:
+### Question Ledger File Format
 
 ```markdown
-**Context**: "[quoted or paraphrased source]"
+# Question Ledger: [Topic]
 
-**Tier**: [Global|Local|Boundary]
+Generated: YYYY-MM-DD
+Source: [source document path]
 
-**Gap**: [gap ID and short ambiguity summary]
+## P0: Global Level
+| ID | Priority | Question | Status | Answer | Notes |
+|----|----------|----------|--------|--------|-------|
+| P0-1 | critical | What are the overall input formats? | open | | |
+| P0-2 | critical | What submodules exist? | open | | |
 
-**Question**: [one specific business question]
+## P1: Submodule Level
+| ID | Priority | Question | Status | Answer | Notes |
+|----|----------|----------|--------|--------|-------|
+| P1-1 | high | How does Module A transform input? | open | | |
 
-**Why it matters**: [how a different answer would change visible behavior]
+## P2: Boundary & Exception
+| ID | Priority | Question | Status | Answer | Notes |
+|----|----------|----------|--------|--------|-------|
+| P2-1 | medium | How to handle empty input? | open | | |
 
+## Summary
+- P0: X open, Y confirmed, Z deferred
+- P1: X open, Y confirmed, Z deferred
+- P2: X open, Y confirmed, Z deferred
+```
+
+**Status values**: `open`, `answered`, `confirmed`, `deferred`
+**Priority values**: `critical`, `high`, `medium`, `low`
+
+---
+
+## Stage 3: P0 Clarification (Global)
+
+### Pre-Question Checklist
+
+Before asking ANY P0 question:
+- [ ] I have read `*-questions.md`
+- [ ] The question exists in the P0 section with status `open`
+- [ ] I am not waiting for a previous answer
+- [ ] This is a business question, not engineering
+
+### Question Format
+
+```markdown
+**From**: P0-1 in *-questions.md
+**Priority**: critical
+**Question**: [the exact question from the file]
+**Context**: [quote from source document if relevant]
+**Why it matters**: [how different answers change behavior]
 **Options** (if useful):
 A. ...
 B. ...
 ```
 
-After the user answers:
+### After Answer
 
-1. Restate the answer precisely.
-2. Confirm it.
-3. Update the gap status.
-4. Move to the next highest-priority open gap within the current tier.
+1. Update the question's `Status` to `answered` and fill `Answer` in `*-questions.md`
+2. If answer reveals new questions:
+   - Add them to the appropriate section first
+   - Then continue with current tier
+3. Confirm: "To confirm: [precise restatement]. Correct?"
+4. If confirmed, update status to `confirmed`
 
-## Clarification Exit Criteria
+### P0 Exit Criteria
 
-Do not move to the design doc until all of the following are true:
+All P0 questions must be `confirmed` or `deferred` before proceeding.
 
-- The document understanding summary is user-confirmed
-- All `Global` `P0` gaps are `confirmed` or `accepted-assumption`
-- The in-scope slice, overall I/O, module relationships, and inter-module handoffs for the relevant flow are explicit
-- All `Local` `P0` gaps are `confirmed` or `accepted-assumption`
-- Rule precedence is explicit where conflicts are possible
-- All `Boundary` `P1` gaps that affect visible behavior are `confirmed` or `accepted-assumption`
-- Boundary and invalid-input behavior is explicit enough to implement
-- There are enough concrete examples to anchor normal and edge behavior
+### P0 Intermediate Output
 
-If this is not true, keep clarifying.
+Write `*-global-flow.md` containing:
 
-## Error Recovery
+1. **Overall Input Contract**
+   - Format specification
+   - Required/optional fields
+   - Semantics of each field
+   - Constraints and invariants
 
-If you detect that you have violated a rule, acknowledge and recover:
+2. **Overall Output Contract**
+   - Format specification
+   - Field semantics
+   - Ordering guarantees
+   - Interpretation rules
 
-| Violation | Recovery Action |
-|-----------|-----------------|
-| Asked multiple questions at once | Acknowledge: "I asked multiple questions. Let me ask only the first one." Then ask only the first question. |
-| Asked a duplicate question | Acknowledge: "This was already clarified." Skip to next open gap. |
-| Asked an engineering question | Acknowledge: "That was an implementation question. Let me rephrase for business meaning." Rephrase as business question. |
-| Made a silent assumption | Acknowledge: "I assumed [X]. Let me verify this with you." Ask the user to confirm or correct. |
-| Asked a lower-tier question too early | Acknowledge: "I moved too far into details before the higher-level flow was clear. Let me return to the unresolved higher-level gap." |
+3. **Module List**
+   - All submodules in scope
+   - Brief description of each
 
-**Self-correction is expected and encouraged.** Do not hide violations; acknowledge them and recover.
+4. **Execution Flow**
+   - Order of execution
+   - Branching conditions
+   - Parallel vs serial execution
 
-## Design Doc Stage
+5. **Inter-Module Dataflow**
+   - What data passes between modules
+   - Data transformation at each handoff
 
-After the user approves the staged clarification summaries, write a design doc that is precise enough that two engineers would produce the same externally visible behavior.
+Example flow diagram:
+```text
+Input A + Input B
+  -> [Validate] Module M1
+  -> [Transform] Module M2
+  -> [Branch] Decision D1:
+     - Condition X -> Module M3 -> Output X
+     - Condition Y -> Module M4 -> Module M5 -> Output Y
+```
 
-Use this structure:
+Ask user to approve this output before proceeding to P1.
 
-1. **Objective**: Business outcome and success criteria
-2. **Scope**: In-scope flow and explicit out-of-scope items
-3. **Document Understanding**: High-level structure of the source and the chosen slice's place in it
-4. **Global Flow**: Overall inputs, outputs, branches, module relationships, and inter-module handoffs for the relevant flow
-5. **Domain Model**: Entities, records, and their business meaning
-6. **Input Contract**: Required and optional fields, units, ranges, invariants, assumptions
-7. **Output Contract**: Structure, semantics, ordering, and interpretation
-8. **Decision Rules**: Business rules in strict precedence order
-9. **Processing Flow**: Step-by-step transformation from input to output
-10. **Edge and Failure Cases**: Empty, invalid, duplicate, partial, extreme, and conflict cases
-11. **Examples**: Representative normal, boundary, and failure examples
-12. **Clarification Decisions**: Key question-answer outcomes and accepted assumptions
-13. **Acceptance Criteria**: What a correct implementation must do
+---
 
-Design-doc requirements:
+## Stage 4: P1 Clarification (Submodule)
 
-- Every critical rule should be traceable to either the source document or a clarification decision.
-- If the source document is vague, the design doc must make the chosen interpretation explicit.
-- Do not hide unresolved ambiguity inside broad wording.
-- Do not leave `TODO`, `TBD`, placeholders, or deferred decisions in the spec.
-- Make overall flow, ordering, determinism, invalid-input behavior, and boundary behavior explicit when they affect visible output.
-- Make upstream/downstream contracts explicit for the in-scope slice where they affect correctness.
+Same process as P0, but for P1 questions.
 
-### Written Spec
+### P1 Intermediate Output
 
-After the user approves the design doc draft:
+Write `*-submodule-design.md` containing, for each submodule:
 
-1. Write it as a markdown spec file
-2. Use a stable path such as `docs/business-specs/YYYY-MM-DD-<topic>-design.md` unless the user prefers another location
-3. Run the spec review loop using `references/spec-document-reviewer-prompt.md`
-4. Revise and re-review until approved
-5. Ask the user to review the written spec before moving to the golden program
+1. **Module Name**
+2. **Purpose** - what this module does
+3. **Input**
+   - What it receives
+   - Format and constraints
+4. **Output**
+   - What it produces
+   - Format and guarantees
+5. **Transform Logic** - step-by-step transformation
+6. **Decision Rules** - rules in precedence order
+7. **Dependencies** - what it needs from other modules
 
-## Spec Review Loop
+Ask user to approve before proceeding to P2.
+
+---
+
+## Stage 5: P2 Clarification (Boundary)
+
+Same process as P0, but for P2 questions.
+
+### P2 Intermediate Output
+
+Write `*-boundary-rules.md` containing:
+
+1. **Empty/Missing Input Handling**
+   - Which fields can be empty
+   - What happens when required field is missing
+   - Default values if any
+
+2. **Invalid Value Handling**
+   - Validation rules
+   - What is considered invalid
+   - Error messages or codes
+
+3. **Boundary Values**
+   - Min/max for numeric fields
+   - Length limits for strings
+   - Inclusive vs exclusive boundaries
+
+4. **Duplicate Data Handling**
+   - How to detect duplicates
+   - Merge, reject, or error behavior
+
+5. **Exception Handling**
+   - What errors to surface
+   - Error format
+   - Recovery behavior if any
+
+Ask user to approve before proceeding to design doc.
+
+---
+
+## Stage 6: Design Doc
+
+Write the full implementation spec to `*-design.md`:
+
+1. **Objective** - Business outcome and success criteria
+2. **Scope** - In-scope slice, explicit out-of-scope items
+3. **Global Flow** - From P0 output (reference or include)
+4. **Domain Model** - Entities and business meaning
+5. **Input Contract** - Full specification
+6. **Output Contract** - Full specification
+7. **Submodule Designs** - From P1 output (reference or include)
+8. **Processing Flow** - End-to-end steps with precision
+9. **Boundary Rules** - From P2 output (reference or include)
+10. **Examples** - Input/output pairs for normal, edge, and conflict cases
+11. **Clarification Decisions** - Summary of key Q&A outcomes
+12. **Acceptance Criteria** - What correct implementation must do
+
+### Design Doc Requirements
+
+- No `TODO`, `TBD`, placeholders, or deferred decisions
+- No hidden ambiguity in broad wording
+- Every critical rule traceable to source or clarification
+- Two engineers reading this produce the same implementation
+
+---
+
+## Stage 7: Spec Review Loop
 
 After writing the spec file:
 
-1. Dispatch a focused spec reviewer subagent using the template in `references/spec-document-reviewer-prompt.md`
-2. Isolate context: provide only the spec path and minimum task-local review context needed to evaluate the written spec
-3. Never pass full session history, hidden reasoning, or your own intended conclusions into the review context
-4. If the reviewer returns `Issues Found`, revise and re-dispatch
-5. Repeat until `Approved`, with a maximum of 3 review iterations
-6. If still blocked after 3 iterations, surface the unresolved issues to the user
+1. Dispatch a spec reviewer subagent using `references/spec-document-reviewer-prompt.md`
+2. Provide only the spec path and minimum task-local context
+3. Never pass full session history or private reasoning
+4. If `Issues Found`, fix and re-dispatch
+5. Maximum 3 iterations, then surface unresolved issues to user
 
-## Golden Program Stage
+---
 
-After the user approves the written and reviewed spec:
+## Stage 8: User Review
 
-1. Create a lightweight plan covering:
-   - public entrypoint
-   - main logic steps or modules
-   - verification approach
-2. Implement the golden program with these rules:
-   - correctness over performance
-   - deterministic behavior
-   - self-contained unless the repo already dictates a pattern
-   - prefer a pure-function style entrypoint when practical
-   - no hidden dependence on wall-clock time, randomness, network, or mutable external state
-   - explicit handling for invalid or boundary cases defined in the design
-   - readable decomposition and naming
-   - brief comments only where they help map code back to design rules
-3. Verify the implementation against:
-   - design doc examples
-   - key edge and failure cases
-   - precedence-conflict cases if they exist
-   - the confirmed global flow and inter-module handoff assumptions for the in-scope slice
+Present the reviewed spec:
 
-If a missing business rule still blocks a correct implementation, stop and ask instead of guessing.
+> "Spec written and reviewed. Please review `*-design.md` and let me know if you want any changes before we proceed to test cases."
 
-## Output Expectations
+Wait for user approval. Make changes if requested.
 
-When this skill is used well, it should produce:
+---
 
-1. Document understanding notes that externalize the current interpretation
-2. A clarified and user-approved business understanding from global structure to local detail
-3. A design spec with explicit flow, rules, boundaries, and traceability
-4. A correctness-first golden reference program that is easy to inspect
+## Stage 9: Test Cases
 
-Do not skip the approval gates between these stages.
+### 9.1 Collect Examples from User
+
+Ask the user to provide input/output examples:
+
+> "Please provide 2-3 examples of input and expected output. You can describe them in any format you prefer (JSON, plain text, code snippets, etc.). I'll convert them to structured test data."
+
+### 9.2 Design Additional Tests
+
+Based on P2 output, design tests for:
+- Boundary values
+- Invalid inputs
+- Exception cases
+- Edge cases
+
+### 9.3 Choose Test Framework
+
+Detect project context:
+- Has `package.json` → Node.js with simple asserts
+- Has `requirements.txt` or `pyproject.toml` → Python with pytest
+- Unknown → Default to Node.js
+
+### 9.4 Write Test File
+
+Node.js example (`*-test.js`):
+```javascript
+// Test cases for [topic]
+// Run: node *-test.js --all
+
+const assert = require('assert');
+
+const tests = [
+  { name: 'normal case 1', input: {...}, expected: {...} },
+  { name: 'boundary case', input: {...}, expected: {...} },
+  { name: 'exception case', input: {...}, expectedError: '...' },
+];
+
+function runAll() {
+  let passed = 0, failed = 0;
+  for (const t of tests) {
+    try {
+      // Call the golden program
+      const result = require('./golden.js').transform(t.input);
+      assert.deepStrictEqual(result, t.expected);
+      console.log(`✓ ${t.name}`);
+      passed++;
+    } catch (e) {
+      console.log(`✗ ${t.name}: ${e.message}`);
+      failed++;
+    }
+  }
+  console.log(`\nResults: ${passed} passed, ${failed} failed`);
+  process.exit(failed > 0 ? 1 : 0);
+}
+
+if (process.argv.includes('--all')) runAll();
+```
+
+Python example (`*-test.py`):
+```python
+# Test cases for [topic]
+# Run: python -m pytest *_test.py -v
+
+import pytest
+from golden import transform
+
+def test_normal_case_1():
+    assert transform({...}) == {...}
+
+def test_boundary_case():
+    assert transform({...}) == {...}
+
+def test_exception_case():
+    with pytest.raises(ValueError):
+        transform({...})
+```
+
+### 9.5 User Confirmation
+
+> "Test cases ready. Run the test command to see current status (they will fail until golden program is implemented). Please confirm the test cases are correct before we proceed."
+
+---
+
+## Stage 10: Golden Program
+
+### 10.1 Create Plan
+
+Lightweight plan covering:
+- Public entrypoint function
+- Main modules/helpers
+- How tests will validate
+
+### 10.2 Implement
+
+Rules:
+- Correctness and readability over performance
+- Self-contained implementation
+- Prefer pure-function entrypoint
+- No hidden dependence on wall-clock time, randomness, network
+- Brief comments linking to spec sections
+- Explicit handling for all boundary cases
+
+### 10.3 Test-Driven Iteration
+
+1. Run all tests
+2. For each failing test:
+   - Identify the issue
+   - Fix the code
+   - Re-run tests
+3. Repeat until ALL tests pass
+4. Report final status:
+
+> "Golden program complete. All X tests pass. Run `node *-test.js --all` to verify."
+
+---
+
+## State Tracking
+
+Before each question:
+
+```text
+State: Stage [P0|P1|P2] | Question [ID] | Waiting: Yes/No | File: *-questions.md | P0-Open: X | P1-Open: Y | P2-Open: Z
+```
+
+If `Waiting: Yes` → STOP. Wait for user answer.
+
+---
+
+## Error Recovery
+
+| Violation | Recovery Action |
+|-----------|-----------------|
+| Asked question not in file | "That question isn't in the ledger. Let me add it first." Add to file, then ask. |
+| Asked multiple questions | Acknowledge: "I asked multiple questions. Let me ask only the first one." |
+| Didn't read file before asking | "I need to read the question file first." Read file, then ask. |
+| Asked engineering question | "That was an implementation question. Let me rephrase for business meaning." |
+| Made silent assumption | "I assumed [X]. Let me verify." Ask user to confirm. |
+
+**Self-correction is expected.** Acknowledge violations and recover.
+
+---
+
+## Output Summary
+
+When complete, the following files exist:
+
+1. `*-understanding.md` - Document understanding
+2. `*-questions.md` - Full question ledger with all answers
+3. `*-global-flow.md` - P0 intermediate output
+4. `*-submodule-design.md` - P1 intermediate output
+5. `*-boundary-rules.md` - P2 intermediate output
+6. `*-design.md` - Full implementation spec
+7. `*-test.js` or `*-test.py` - Test cases with CLI
+8. `golden.js` or `golden.py` - Golden program (all tests passing)
