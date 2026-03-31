@@ -1,64 +1,53 @@
 # business-spec-to-golden
 
-A Claude Code Skill that transforms requirement documents into detailed design specifications and golden reference programs with test-driven development.
+A Claude Code Skill that transforms requirement documents into reviewed design specifications and test-validated golden reference programs.
 
 ## Overview
 
 This Skill converts ambiguous requirements into:
 
-1. **Document Understanding Notes** - Externalized interpretation of the source
-2. **Question Ledger** - File-based P0/P1/P2 questions with answers
-3. **Tiered Intermediate Outputs** - Global flow, submodule design, boundary rules
+1. **Working-Model Understanding** - A correction-friendly baseline that separates source facts from agent interpretation
+2. **Staged Question Ledgers** - Separate P0, P1, and P2 ledgers with reconciliation
+3. **Tiered Baseline Outputs** - Structural, module, and boundary artifacts
 4. **Reviewed Design Spec** - Implementation-ready specification
-5. **Test Cases** - With CLI entry for validation
-6. **Golden Reference Program** - Passing all tests
+5. **Approved Test Plan and Executable Tests** - Human-readable plan plus runnable tests
+6. **Golden Reference Program** - Passing tests and coverage gates
 
 ## Key Features
 
-- **File-First Rule** - Every question comes from the question ledger file, never from memory
-- **P0/P1/P2 Tiering** - Global → Submodule → Boundary questions in strict order
-- **Intermediate Outputs** - Each tier produces a structured markdown file
-- **Test-Driven Development** - Golden program must pass all tests
-- **Automated Spec Review** - Subagent reviews spec before user review
+- **Working-Model Understanding** - Scope, structure, and ambiguities are surfaced before detailed questioning
+- **Stage-by-Stage Ledgers** - P0, P1, and P2 are generated only when needed
+- **Ledger Reconciliation** - New answers can resolve, obsolete, or supersede future questions
+- **Baseline Artifacts** - Each tier produces a compact input for the next stage
+- **Design Freeze and Test Freeze** - Code starts only after approved spec and test plan
+- **Coverage Gate** - Golden program must pass tests and meet coverage targets
 
-## Two Versions
+## Single Skill
 
-| Version | File | Lines | Target Models |
-|---------|------|-------|---------------|
-| **General** | `SKILL.md` | ~230 | All models |
-| **Full** | `SKILL-FULL.md` | ~350 | Strong models (Claude, GPT-4) |
+This repository maintains a single `SKILL.md`, with detailed format references under `references/`.
 
-### Version Differences
-
-| Feature | SKILL.md | SKILL-FULL.md |
-|---------|----------|---------------|
-| Detailed workflow steps | Basic | Comprehensive |
-| Test file examples | Minimal | Full examples |
-| Error recovery table | 4 items | 5 items |
-| State tracking | Simple | Detailed |
-
-## Workflow (10 Stages)
+## Workflow
 
 ```
-1. Document Understanding → *-understanding.md
-2. Question Ledger → *-questions.md (P0/P1/P2)
-3. P0 Clarification → *-global-flow.md
-4. P1 Clarification → *-submodule-design.md
-5. P2 Clarification → *-boundary-rules.md
-6. Design Doc → *-design.md
-7. Spec Review (subagent)
-8. User Review & Approve
-9. Test Cases → *-test.js with CLI
-10. Golden Program → test-driven iteration
+1. Working-Model Understanding → *-understanding.md
+2. P0 Clarification → *-p0-questions.md → *-global-flow.md
+3. P1 Clarification → *-p1-questions.md → *-submodule-design.md
+4. P2 Clarification → *-p2-questions.md → *-boundary-rules.md
+5. Design Doc → *-design.md
+6. Spec Review (isolated subagent)
+7. User Review & Design Freeze
+8. Test Plan → *-test-plan.md
+9. Executable Tests → *-test.js / *-test.py
+10. Golden Program → tests + coverage gates
 ```
 
-## P0/P1/P2 Tiering
+## P0/P1/P2 Semantics
 
 | Tier | Scope | Questions About |
 |------|-------|-----------------|
-| **P0** | Global | Input/output formats, I/O contracts, submodule list, execution order, inter-module dataflow |
-| **P1** | Submodule | Each module's input/output, transform logic, decision rules |
-| **P2** | Boundary | Empty/invalid input, boundary values, exception handling |
+| **P0** | Structure-level | Scope, module boundaries, system I/O, main flow, structural handoffs |
+| **P1** | Normal-path module behavior | Module responsibilities, business inputs/outputs, transform logic, precedence |
+| **P2** | Boundary and failure behavior | Missing input, invalid values, duplicates, conflicts, rejection behavior |
 
 ## Output Files
 
@@ -66,13 +55,16 @@ All files go to `docs/business-specs/YYYY-MM-DD-<topic>-*`:
 
 | File | Content |
 |------|---------|
-| `*-understanding.md` | Document structure, module inventory, known I/O |
-| `*-questions.md` | P0/P1/P2 questions with status and answers |
-| `*-global-flow.md` | Flow diagrams, I/O contracts, module relationships |
-| `*-submodule-design.md` | Each submodule's input/output/transform |
-| `*-boundary-rules.md` | Boundary rules, exception handling |
+| `*-understanding.md` | Working-model understanding and ambiguity list |
+| `*-p0-questions.md` | Structure-level question ledger |
+| `*-p1-questions.md` | Normal-path question ledger |
+| `*-p2-questions.md` | Boundary/failure question ledger |
+| `*-global-flow.md` | Structural baseline |
+| `*-submodule-design.md` | Normal-path module baseline |
+| `*-boundary-rules.md` | Boundary decision matrix |
 | `*-design.md` | Full implementation spec |
-| `*-test.js` | Test cases with CLI (`node *-test.js --all`) |
+| `*-test-plan.md` | Human-readable test design and traceability |
+| `*-test.js` / `*-test.py` | Executable tests with CLI and coverage commands |
 
 ## Usage
 
@@ -89,44 +81,27 @@ Please help me generate a design document and reference implementation.
 
 ## Test-Driven Golden Program
 
-The golden program is developed test-first:
+The golden program is developed only after the spec and test plan are approved:
 
-1. Collect input/output examples from user
-2. Design boundary and exception test cases
-3. Write test file with CLI entry
-4. Implement golden program
-5. Iterate until ALL tests pass
-
-```bash
-# Run all tests
-node docs/business-specs/2024-01-15-promo-test.js --all
-```
-
-## Example Session
-
-**Input**: Promotion rules document
-
-**Process**:
-1. Agent writes understanding notes
-2. Agent builds question ledger (P0: 5, P1: 8, P2: 4 questions)
-3. P0: Asks about inputs, outputs, modules → writes global-flow.md
-4. P1: Asks about each module's logic → writes submodule-design.md
-5. P2: Asks about boundaries → writes boundary-rules.md
-6. Writes design.md
-7. Subagent reviews design
-8. User approves
-9. User provides test examples, agent writes test file
-10. Agent implements golden program, all tests pass
+1. Collect user canonical examples
+2. Expand a human-readable `*-test-plan.md`
+3. Write executable tests with CLI and coverage commands
+4. Implement the golden program
+5. Iterate until all tests pass
+6. Enforce coverage target (`>= 80%`, prefer `>= 90%` for pure business logic)
 
 ## Files
 
 ```
 business-spec-to-golden/
-├── SKILL.md          # General version
-├── SKILL-FULL.md     # Full version for strong models
-├── README.md         # This file
+├── SKILL.md
+├── README.md
+├── README-CN.md
 └── references/
-    └── spec-document-reviewer-prompt.md
+    ├── artifact-header-template.md
+    ├── spec-template.md
+    ├── spec-document-reviewer-prompt.md
+    └── test-plan-template.md
 ```
 
 ## License

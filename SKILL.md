@@ -1,328 +1,344 @@
 ---
 name: business-spec-to-golden
-description: "Transform requirements into reviewed design specs and golden programs with test-driven development. Enforce file-first question ledger (P0/P1/P2), tiered intermediate outputs, and automated test validation before golden program."
+description: "Turn rough business requirements into a clarified, reviewed implementation design spec and a test-validated golden program. Enforce a file-first workflow with a working-model understanding doc, staged P0/P1/P2 ledgers, approval gates, isolated spec review, and test-driven delivery."
 ---
 
-# Requirements to Design Spec and Golden Program
+# Business Spec to Design Spec and Golden Program
 
-Transform a rough requirements document into a reviewed implementation spec and a golden reference program through staged clarification with test-driven development.
+Turn a rough requirement document into:
 
-## HARD-GATE
+1. `*-understanding.md`
+2. `*-p0-questions.md`, `*-p1-questions.md`, `*-p2-questions.md`
+3. `*-global-flow.md`, `*-submodule-design.md`, `*-boundary-rules.md`
+4. `*-design.md`
+5. `*-test-plan.md` and executable tests
+6. `golden.js` or `golden.py`
 
-**Stage Order**: Document Understanding → Question Ledger → P0 Clarification → P1 Clarification → P2 Clarification → Design Doc → Spec Review → User Review → Test Cases → Golden Program. Never skip or reorder.
+## Hard Gates
 
-**Single Question Rule**: Ask ONE business question at a time. Wait for answer before next question.
-
-**File-First Rule**: Every question MUST come from the question ledger file. Read the file before asking. Update the file after each answer. Never ask from memory.
-
-**Business Focus**: Ask about business meaning, inputs/outputs, module relationships, rules, and edge cases. Do NOT ask about engineering choices during clarification.
-
-**Scope Control**: For multi-module documents, first identify the whole structure, then pick one in-scope slice.
-
-**Externalize State**: All understanding, questions, and summaries MUST be written to markdown files.
-
-**Gates**: Require user approval at: (1) document understanding, (2) each tier's intermediate output (P0/P1/P2), (3) design doc, (4) test cases, (5) golden program.
-
----
+- **Stage Order**: Source Review → Understanding → P0 → P1 → P2 → Design Doc → Spec Review → User Review → Test Plan → Executable Tests → Golden Program.
+- **File-First**: Read the current stage file before acting. Update it after each answer, correction, or approval.
+- **Single Question**: Ask exactly one business question at a time.
+- **Business Only**: Clarification is about business meaning, scope, contracts, flow, examples, priorities, and failure behavior. Do not ask engineering choices.
+- **No Silent Assumptions**: Missing business rules must be clarified or recorded as explicit assumptions for confirmation.
+- **Approval Gates**: Require user approval after `*-understanding.md`, `*-global-flow.md`, `*-submodule-design.md`, `*-boundary-rules.md`, `*-design.md`, `*-test-plan.md`, and final delivery.
+- **TDD Gate**: Start coding only after the test plan is approved and the executable test file exists.
+- **Completion Gate**: Delivery requires all tests passing and coverage meeting the configured threshold.
 
 ## Output Files
 
-All outputs go to `docs/business-specs/YYYY-MM-DD-<topic>-*` unless user specifies otherwise:
-
-| Stage | Output File | Content |
-|-------|-------------|---------|
-| Understanding | `*-understanding.md` | Document structure, module inventory, known I/O |
-| Question Ledger | `*-questions.md` | P0/P1/P2 questions with status and answers |
-| P0 Output | `*-global-flow.md` | Flow diagrams, I/O contracts, module relationships |
-| P1 Output | `*-submodule-design.md` | Each submodule's input/output/transform logic |
-| P2 Output | `*-boundary-rules.md` | Boundary rules, exception handling rules |
-| Design Doc | `*-design.md` | Full implementation spec |
-| Test Cases | `*-test.js` or `*-test.py` | Test file with CLI entry |
-
----
-
-## Stage 1: Document Understanding
-
-1. Read the source document and extract its structure
-2. Identify major modules, branches, and flows
-3. Write understanding notes to `*-understanding.md`
-
-Understanding notes structure:
-1. **Document Structure** - sections, modules, flows
-2. **Current Business Understanding** - what the system appears to do
-3. **Module Inventory** - candidate submodules
-4. **Known Global Inputs/Outputs** - anything explicit in source
-5. **Known Relationships** - serial, parallel, optional, conditional
-
-Present a concise summary and ask user to confirm or correct.
-
----
-
-## Stage 2: Question Ledger
-
-Build a complete question ledger and write to `*-questions.md`.
-
-**P0: Global Level** - Questions about:
-- Overall input formats and semantics
-- Overall output formats and semantics
-- I/O contracts
-- List of submodules
-- Execution order of submodules
-- Input/output relationships between submodules
-
-**P1: Submodule Level** - Questions about:
-- Each submodule's input/output details
-- Transformation logic
-- Decision rules and precedence
-- Dependencies on other modules
-
-**P2: Boundary & Exception** - Questions about:
-- Empty or missing input handling
-- Invalid value handling
-- Boundary values (min/max, thresholds)
-- Duplicate or conflicting data
-- Exception handling rules
-
-### Question Ledger File Format
-
-```markdown
-# Question Ledger: [Topic]
-
-## P0: Global Level
-| ID | Question | Status | Answer |
-|----|----------|--------|--------|
-| P0-1 | What are the overall input formats? | open | |
-| P0-2 | What submodules exist? | open | |
-
-## P1: Submodule Level
-| ID | Question | Status | Answer |
-|----|----------|--------|--------|
-| P1-1 | How does Module A transform input? | open | |
-
-## P2: Boundary & Exception
-| ID | Question | Status | Answer |
-|----|----------|--------|--------|
-| P2-1 | How to handle empty input? | open | |
-```
-
-**Status values**: `open`, `answered`, `confirmed`, `deferred`
-
----
-
-## Stage 3: P0 Clarification (Global)
-
-**Before each question**: Read `*-questions.md`, find next `open` P0 question.
-
-**Question format**:
-```markdown
-**From**: P0-1 in questions.md
-**Question**: [the question]
-**Why it matters**: [correctness impact]
-```
-
-**After each answer**:
-1. Update the question's `Status` and `Answer` in `*-questions.md`
-2. If answer reveals new questions, add them to the ledger first
-3. Confirm: "To confirm: [restatement]. Correct?"
-
-**When P0 is complete** (all P0 questions `confirmed` or `deferred`):
-
-Write `*-global-flow.md` containing:
-1. **Overall Input Contract** - format, fields, semantics
-2. **Overall Output Contract** - format, fields, semantics
-3. **Module List** - all submodules in scope
-4. **Execution Flow** - textual or diagram showing order and branching
-5. **Inter-Module Dataflow** - what passes between modules
-
-Example flow diagram:
-```text
-Input A + Input B
-  -> Module M1
-  -> Module M2
-  -> Branch:
-     - Path X -> Module M3 -> Output X
-     - Path Y -> Module M4 -> Output Y
-```
-
-Ask user to approve this intermediate output before proceeding.
-
----
-
-## Stage 4: P1 Clarification (Submodule)
-
-**Before each question**: Read `*-questions.md`, find next `open` P1 question.
-
-Same question format and update process as P0.
-
-**When P1 is complete**:
-
-Write `*-submodule-design.md` containing, for each submodule:
-1. **Purpose** - what this module does
-2. **Input** - what it receives
-3. **Output** - what it produces
-4. **Transform Logic** - step-by-step transformation
-5. **Decision Rules** - rules in precedence order
-
-Ask user to approve before proceeding.
-
----
-
-## Stage 5: P2 Clarification (Boundary)
-
-**Before each question**: Read `*-questions.md`, find next `open` P2 question.
-
-Same question format and update process as P0.
-
-**When P2 is complete**:
-
-Write `*-boundary-rules.md` containing:
-1. **Empty/Missing Input** - how to handle
-2. **Invalid Values** - validation rules and rejection behavior
-3. **Boundary Values** - min/max, inclusive/exclusive thresholds
-4. **Duplicate Data** - merge, reject, or error?
-5. **Exception Handling** - what errors to surface, how
-
-Ask user to approve before proceeding.
-
----
-
-## Stage 6: Design Doc
-
-Write the full implementation spec to `*-design.md`:
-
-1. **Objective** - Business outcome and success criteria
-2. **Scope** - In-scope slice, out-of-scope items
-3. **Global Flow** - From P0 output
-4. **Domain Model** - Entities and business meaning
-5. **Input Contract** - Full specification
-6. **Output Contract** - Full specification
-7. **Submodule Designs** - From P1 output
-8. **Processing Flow** - End-to-end steps
-9. **Boundary Rules** - From P2 output
-10. **Examples** - Input/output pairs
-11. **Clarification Decisions** - Key Q&A summary
-12. **Acceptance Criteria** - What correct implementation must do
-
-Goal: Two engineers reading this produce the same implementation.
-
----
-
-## Stage 7: Spec Review Loop
-
-After writing the spec file:
-
-1. Dispatch a spec reviewer subagent using `references/spec-document-reviewer-prompt.md`
-2. Provide only the spec path and minimum context
-3. If `Issues Found`, fix and re-dispatch
-4. Maximum 3 iterations, then surface to user
-
----
-
-## Stage 8: User Review
-
-Present the reviewed spec to user:
-
-> "Spec written and reviewed. Please review `*-design.md` and confirm before we proceed to test cases."
-
-Wait for user approval. Make changes if requested.
-
----
-
-## Stage 9: Test Cases
-
-### 9.1 Collect Examples from User
-
-Ask user to provide 2-3 input/output examples:
-> "Please provide 2-3 examples of input and expected output. You can describe them in any format you prefer."
-
-Convert user's description to structured test data.
-
-### 9.2 Design Additional Tests
-
-Based on P2 output, design:
-- Boundary value tests
-- Exception handling tests
-- Edge cases
-
-### 9.3 Write Test File
-
-Choose test framework based on project context:
-- Node.js project → `*-test.js` with simple asserts
-- Python project → `*-test.py` with pytest
-- Unknown → default to Node.js
-
-Provide CLI entry:
-```bash
-# Run all tests
-node *-test.js --all
-
-# Or for Python
-python -m pytest *-test.py -v
-```
-
-### 9.4 User Confirmation
-
-> "Test cases ready. Run `node *-test.js --all` to see them. Please confirm before we proceed to golden program."
-
----
-
-## Stage 10: Golden Program
-
-### 10.1 Create Plan
-
-Lightweight plan covering:
-- Public entrypoint
-- Main modules
-- Test verification approach
-
-### 10.2 Implement
+Default path: `docs/business-specs/YYYY-MM-DD-<topic>-*`
+
+| Stage | Output |
+|-------|--------|
+| Understanding | `*-understanding.md` |
+| P0 Ledger | `*-p0-questions.md` |
+| P1 Ledger | `*-p1-questions.md` |
+| P2 Ledger | `*-p2-questions.md` |
+| Optional History | `*-question-history.md` |
+| P0 Baseline | `*-global-flow.md` |
+| P1 Baseline | `*-submodule-design.md` |
+| P2 Baseline | `*-boundary-rules.md` |
+| Design Doc | `*-design.md` |
+| Test Plan | `*-test-plan.md` |
+| Executable Tests | `*-test.js` or `*-test.py` |
+| Golden Program | `golden.js` or `golden.py` |
+
+Use [artifact-header-template.md](/home/kgx/.claude/skills/business-spec-to-golden/references/artifact-header-template.md) for stage artifacts and ledgers unless a stronger template overrides it. If upstream structure changes, mark dependent files `stale` before continuing.
+
+## Stage 1: Understanding
+
+Write `*-understanding.md` as a working model, not final truth.
+
+It must separate:
+
+- `Source Facts`
+- `Working Interpretation`
+- `Scope Proposal`
+- `Ambiguities and Risk Points`
+
+Recommended sections:
+
+1. `Status`
+2. `Source`
+3. `Current Scope Proposal`
+4. `Source Facts`
+5. `Working Interpretation`
+6. `Candidate Modules or Processing Stages`
+7. `Known System-Level Inputs and Outputs`
+8. `Ambiguities and Risk Points`
+9. `What Must Be Confirmed Before P0`
 
 Rules:
-- Correctness and readability first
-- Self-contained implementation
-- Brief comments linking to spec
-- Explicit handling for boundary cases
 
-### 10.3 Test-Driven Iteration
+- Keep it short and correction-friendly
+- Do not present guesses as facts
+- If the user corrects structure, scope, or major business meaning, update this file first
+- Do not start P0 until this file is accepted or corrected and reconfirmed
 
-1. Run all tests
-2. If any fail, fix the code
-3. Repeat until ALL tests pass
-4. Report final status to user
+## P0/P1/P2 Semantics
 
----
+- **P0: Structure-Level**
+  Use P0 when an answer could change scope, module boundaries, system-level I/O, main flow, inter-module handoffs, or the content of `*-understanding.md`.
+- **P1: Normal-Path Module Behavior**
+  Use P1 when structure is stable and the question refines one module or a small cluster on the normal business path.
+- **P2: Boundary, Conflict, and Failure**
+  Use P2 for missing input, invalid input, thresholds, duplicates, conflict resolution, fallback behavior, and error surfaces that affect observable behavior, acceptance criteria, or tests.
 
-## State Tracking
+Do not classify by topic alone. Classify by impact radius.
 
-Before each question, state:
+## Ledger Strategy
 
-```text
-State: Stage [P0|P1|P2] | Question [ID] | Waiting: Yes/No | File: *-questions.md
+Do not generate a full P0/P1/P2 mega-ledger up front.
+
+Generate ledgers stage by stage:
+
+1. After approved `*-understanding.md`, create `*-p0-questions.md`
+2. After approved P0 baseline, create `*-p1-questions.md`
+3. After approved P1 baseline, create `*-p2-questions.md`
+
+This keeps the active ledger small and avoids invalid early questions.
+
+### Ledger Body
+
+Use the artifact header, then this body shape:
+
+```markdown
+# P0 Question Ledger: [Topic]
+
+| ID | Priority | Depends On | Question | Status | Canonical Answer | Notes |
+|----|----------|------------|----------|--------|------------------|-------|
+| P0-1 | critical | - | What are the fixed system-level inputs and outputs for this slice? | open | | |
+
+## Decision Summary
+- [confirmed decisions only]
 ```
 
-If `Waiting: Yes` → STOP. Wait for user answer.
+Row status values:
 
----
+- `open`
+- `answered`
+- `confirmed`
+- `deferred`
+- `resolved-by`
+- `obsolete`
+- `superseded`
+
+Rules:
+
+- `Canonical Answer` is a compressed decision statement, not a pasted conversation
+- `Depends On` blocks questions until the upstream item is settled
+
+### After Every Answer: Reconcile
+
+After each user answer:
+
+1. Mark the current row `answered`
+2. Rewrite the answer into a canonical decision
+3. Ask for precise confirmation
+4. Mark it `confirmed` once confirmed
+5. Re-read the active ledger
+6. Sweep remaining unresolved items:
+   - covered questions → `resolved-by`
+   - no-longer-relevant questions → `obsolete`
+   - poorly framed questions → `superseded`
+   - newly revealed questions → add only if they belong to the current or a later tier
+7. Recompute the next highest-priority unresolved question
+
+Do not ask the next question before reconciliation completes.
+
+### Structural Change Rule
+
+If an answer changes scope, module boundaries, or system-level flow:
+
+1. Update `*-understanding.md`
+2. Mark dependent artifacts `stale`
+3. Rebuild the active ledger as needed
+4. Return to P0
+
+## Clarification Boundaries
+
+Separate fixed business contracts from internal implementation contracts.
+
+**Must confirm with the user**
+
+- system-level input structure and semantics
+- system-level output structure and semantics
+- externally visible interface contracts
+- module boundaries that change business behavior
+- internal interfaces the user explicitly marks as fixed
+
+**Usually agent-designed**
+
+- internal data structures between submodules
+- helper objects, normalized forms, and temporary representations
+- implementation-only fields that do not change business meaning
+
+Only ask about submodule I/O details when different choices would change business behavior, module boundaries, errors, or externally visible outcomes.
+
+## P0 Exit Artifact
+
+When all P0 questions are `confirmed` or `deferred`, write `*-global-flow.md` as the structural baseline.
+
+Include:
+
+1. `In-Scope Slice`
+2. `System-Level Input Contract`
+3. `System-Level Output Contract`
+4. `Module List and Responsibilities`
+5. `Execution Flow`
+6. `Inter-Module Dataflow`
+7. `Deferred Structural Questions or Explicit Assumptions`
+
+This file captures confirmed structure only, not Q&A history.
+
+## P1 Exit Artifact
+
+When all P1 questions are `confirmed` or `deferred`, write `*-submodule-design.md` as the normal-path module baseline.
+
+For each module include:
+
+1. `Module Name`
+2. `Purpose`
+3. `Business Inputs`
+4. `Business Outputs`
+5. `Normal-Path Transform Logic`
+6. `Decision Rules and Precedence`
+7. `Dependencies`
+8. `Agent-Designed Internal Structures` if needed
+
+Keep it focused on confirmed behavior, not speculative implementation detail.
+
+## P2 Exit Artifact
+
+When all P2 questions are `confirmed` or `deferred`, write `*-boundary-rules.md` as a boundary decision matrix.
+
+Use a decision-oriented format such as:
+
+| Case | Condition | Expected Behavior | Output/Error | Notes |
+|------|-----------|-------------------|--------------|-------|
+
+Cover only business-visible cases:
+
+- missing or empty input
+- invalid values
+- thresholds
+- duplicate or conflicting data
+- conflict resolution precedence
+- error or rejection behavior
+
+Do not turn this file into a general edge-case dump.
+
+## Design Doc
+
+Write `*-design.md` using [spec-template.md](/home/kgx/.claude/skills/business-spec-to-golden/references/spec-template.md).
+
+The spec must:
+
+- be precise enough that two engineers would produce the same visible behavior
+- trace critical rules to approved artifacts or confirmed decisions
+- separate fixed contracts from agent-designed internals
+- contain no `TODO`, `TBD`, placeholders, or unresolved critical ambiguity
+
+## Spec Review and Design Freeze
+
+After writing the spec:
+
+1. Dispatch a reviewer subagent using [spec-document-reviewer-prompt.md](/home/kgx/.claude/skills/business-spec-to-golden/references/spec-document-reviewer-prompt.md)
+2. Pass only the spec path and minimum task-local review context
+3. Re-dispatch after fixes if issues are found
+4. Stop after 3 rounds and surface unresolved issues to the user
+
+Then require explicit user approval on `*-design.md` before moving to tests.
+
+If business rules change after approval, mark `*-design.md` and dependent test/code artifacts `stale` and return to the earliest affected stage.
+
+## Test Planning
+
+Write `*-test-plan.md` using [test-plan-template.md](/home/kgx/.claude/skills/business-spec-to-golden/references/test-plan-template.md).
+
+Responsibilities:
+
+- user provides 2-5 canonical examples and must-not-break behaviors
+- agent expands coverage for boundaries, invalid input, conflicts, and acceptance criteria
+
+Rules:
+
+- map important test cases back to spec rules
+- keep human-readable examples separate from executable test code
+- require user approval on the test plan before coding
+
+## Executable Tests
+
+After test-plan approval:
+
+1. Choose framework from project context
+   - `package.json` → prefer Node.js
+   - `requirements.txt` or `pyproject.toml` → prefer Python with `pytest`
+   - otherwise default to Node.js
+2. Write the executable test file
+3. Provide CLI commands for the suite and coverage
+
+The test file must encode canonical examples plus critical boundary and failure behavior, and it must reflect the approved test plan.
+
+## Golden Program
+
+Only after the executable tests exist:
+
+1. make a lightweight code plan
+2. implement the golden program
+3. run tests until green
+4. run coverage
+5. report completion only after both gates pass
+
+Implementation rules:
+
+- prefer correctness and readability over performance
+- prefer a pure-function entrypoint when practical
+- keep the implementation self-contained
+- do not depend on wall-clock time, randomness, or network access
+- handle approved boundary rules explicitly
+- add only brief comments where traceability would otherwise be unclear
+
+Coverage rules:
+
+- default target: at least 80% line coverage
+- prefer 90% or higher for pure business-logic code with limited I/O shell
+- coverage does not replace explicit testing of critical business rules
+
+## Invalidation Guide
+
+- `*-understanding.md` structural changes can stale P0, P1, P2, stage outputs, spec, tests, and code
+- `*-global-flow.md` changes stale P1, P2, spec, tests, and code
+- `*-submodule-design.md` changes stale P2, spec, tests, and code
+- `*-boundary-rules.md` changes stale spec, tests, and code
+- `*-design.md` changes after test planning stale tests and code
+
+Mark stale files explicitly before regenerating them.
 
 ## Error Recovery
 
 | Violation | Recovery |
 |-----------|----------|
-| Asked question not in file | "That question isn't in the ledger. Let me add it first." Add, then ask. |
-| Asked multiple questions | Acknowledge, ask only the first one |
-| Skipped reading file | "I need to read the question file first." Read, then ask. |
-| Asked engineering question | Rephrase as business question |
+| Asked a question not in the active ledger | Add it to the correct tier file first, then ask from the file |
+| Asked multiple questions | Keep only the first unresolved question active, then reconcile |
+| Failed to reconcile after an answer | Re-read the ledger, update statuses, then continue |
+| Kept asking after a structural correction | Update `*-understanding.md`, mark downstream files `stale`, and return to P0 |
+| Asked about internal implementation details too early | Move it to design stage unless it changes business behavior |
+| Let P2 expand without business impact | Remove or archive non-observable edge cases |
 
----
+## Completion Checklist
 
-## Output Summary
+Before declaring success, ensure these files exist and reflect the latest approved baseline:
 
-When complete:
-1. `*-understanding.md` - Document understanding
-2. `*-questions.md` - Full question ledger with answers
-3. `*-global-flow.md` - P0 intermediate output
-4. `*-submodule-design.md` - P1 intermediate output
-5. `*-boundary-rules.md` - P2 intermediate output
-6. `*-design.md` - Full implementation spec
-7. `*-test.js` or `*-test.py` - Test cases with CLI
-8. Golden program - Passing all tests
+1. `*-understanding.md`
+2. `*-p0-questions.md`
+3. `*-p1-questions.md`
+4. `*-p2-questions.md`
+5. `*-global-flow.md`
+6. `*-submodule-design.md`
+7. `*-boundary-rules.md`
+8. `*-design.md`
+9. `*-test-plan.md`
+10. `*-test.js` or `*-test.py`
+11. `golden.js` or `golden.py`
