@@ -9,8 +9,8 @@
 1. **工作模型理解文档** - 便于纠偏的理解基线，区分源事实与 agent 的解释
 2. **分阶段问题清单** - 分开的 P0、P1、P2 ledger，并带问题收敛机制
 3. **分层基线产物** - 结构、模块、边界三个阶段产物
-4. **经过评审的设计规格** - 可直接用于实现的设计文档
-5. **已确认的测试计划与可执行测试** - 先确认测什么，再生成测试代码
+4. **经过评审的设计规格** - 设计文档先经隔离 review，再进入用户确认
+5. **已确认的测试计划与可执行测试** - 基于用户样例锚点扩展测试，再生成测试代码
 6. **黄金参考程序** - 通过测试与覆盖率门槛的参考实现
 
 ## 核心特性
@@ -19,6 +19,8 @@
 - **按阶段生成问题** - 不再一开始生成完整大问题表
 - **问题收敛机制** - 新答案可以覆盖、作废或替代后续问题
 - **基线产物** - 每个阶段都沉淀为后续阶段的压缩输入
+- **隔离式 Spec Review** - 设计文档先由独立子代理审查，再交给用户确认
+- **用户锚点驱动的测试设计** - 正式 test plan 先基于用户样例，再由 agent 扩展覆盖
 - **设计冻结与测试冻结** - 代码生成前必须先确认 spec 和 test plan
 - **覆盖率门槛** - 黄金程序不仅要跑通测试，还要满足覆盖率要求
 
@@ -34,9 +36,9 @@
 3. P1 澄清 → *-p1-questions.md → *-submodule-design.md
 4. P2 澄清 → *-p2-questions.md → *-boundary-rules.md
 5. 设计文档 → *-design.md
-6. 隔离规格评审（子代理）
+6. 隔离规格评审 → *-spec-review.md
 7. 用户确认与设计冻结
-8. 测试计划 → *-test-plan.md
+8. 收集用户样例 → 测试计划 → *-test-plan.md
 9. 可执行测试 → *-test.js / *-test.py
 10. 黄金程序 → 测试与覆盖率门槛
 ```
@@ -63,6 +65,7 @@
 | `*-submodule-design.md` | 正常路径模块基线 |
 | `*-boundary-rules.md` | 边界决策矩阵 |
 | `*-design.md` | 完整实现规格 |
+| `*-spec-review.md` | 设计文档的隔离审查结果 |
 | `*-test-plan.md` | 人类可读的测试计划与映射 |
 | `*-test.js` / `*-test.py` | 带 CLI 与 coverage 命令的可执行测试 |
 
@@ -81,14 +84,15 @@
 
 ## 测试驱动的黄金程序
 
-黄金程序必须在 spec 和 test plan 都确认后，才进入实现阶段：
+黄金程序必须在 spec 完成隔离 review、且 test plan 建立在用户样例之上后，才进入实现阶段：
 
-1. 收集用户提供的 canonical examples
-2. 先扩展为 `*-test-plan.md`
-3. 再生成带 CLI 与 coverage 命令的可执行测试
-4. 实现黄金程序
-5. 迭代直到所有测试通过
-6. 满足覆盖率门槛（默认 `>= 80%`，纯业务逻辑优先 `>= 90%`）
+1. 通过隔离子代理审查 `*-design.md` 并记录结果
+2. 收集用户提供的 canonical examples 与 must-not-break behaviors
+3. 先按测试类别收敛，再生成 `*-test-plan.md`
+4. 再生成带 CLI 与 coverage 命令的可执行测试
+5. 实现黄金程序
+6. 迭代直到所有测试通过
+7. 满足覆盖率门槛（默认 `>= 80%`，纯业务逻辑优先 `>= 90%`）
 
 ## 文件结构
 
@@ -101,6 +105,7 @@ business-spec-to-golden/
     ├── artifact-header-template.md
     ├── spec-template.md
     ├── spec-document-reviewer-prompt.md
+    ├── spec-review-template.md
     └── test-plan-template.md
 ```
 

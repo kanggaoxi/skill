@@ -9,8 +9,8 @@ This Skill converts ambiguous requirements into:
 1. **Working-Model Understanding** - A correction-friendly baseline that separates source facts from agent interpretation
 2. **Staged Question Ledgers** - Separate P0, P1, and P2 ledgers with reconciliation
 3. **Tiered Baseline Outputs** - Structural, module, and boundary artifacts
-4. **Reviewed Design Spec** - Implementation-ready specification
-5. **Approved Test Plan and Executable Tests** - Human-readable plan plus runnable tests
+4. **Reviewed Design Spec** - Implementation-ready specification plus isolated review
+5. **Approved Test Plan and Executable Tests** - User-anchored plan plus runnable tests
 6. **Golden Reference Program** - Passing tests and coverage gates
 
 ## Key Features
@@ -19,6 +19,8 @@ This Skill converts ambiguous requirements into:
 - **Stage-by-Stage Ledgers** - P0, P1, and P2 are generated only when needed
 - **Ledger Reconciliation** - New answers can resolve, obsolete, or supersede future questions
 - **Baseline Artifacts** - Each tier produces a compact input for the next stage
+- **Isolated Spec Review** - Design docs are reviewed by a separate subagent before user approval
+- **User-Anchored Test Planning** - Formal test planning starts from user examples, then agent expands coverage
 - **Design Freeze and Test Freeze** - Code starts only after approved spec and test plan
 - **Coverage Gate** - Golden program must pass tests and meet coverage targets
 
@@ -34,9 +36,9 @@ This repository maintains a single `SKILL.md`, with detailed format references u
 3. P1 Clarification → *-p1-questions.md → *-submodule-design.md
 4. P2 Clarification → *-p2-questions.md → *-boundary-rules.md
 5. Design Doc → *-design.md
-6. Spec Review (isolated subagent)
+6. Spec Review → *-spec-review.md
 7. User Review & Design Freeze
-8. Test Plan → *-test-plan.md
+8. Collect User Examples → Test Plan → *-test-plan.md
 9. Executable Tests → *-test.js / *-test.py
 10. Golden Program → tests + coverage gates
 ```
@@ -63,6 +65,7 @@ All files go to `docs/business-specs/YYYY-MM-DD-<topic>-*`:
 | `*-submodule-design.md` | Normal-path module baseline |
 | `*-boundary-rules.md` | Boundary decision matrix |
 | `*-design.md` | Full implementation spec |
+| `*-spec-review.md` | Isolated review result for the design spec |
 | `*-test-plan.md` | Human-readable test design and traceability |
 | `*-test.js` / `*-test.py` | Executable tests with CLI and coverage commands |
 
@@ -81,14 +84,15 @@ Please help me generate a design document and reference implementation.
 
 ## Test-Driven Golden Program
 
-The golden program is developed only after the spec and test plan are approved:
+The golden program is developed only after the spec is reviewed and the test plan is user-anchored:
 
-1. Collect user canonical examples
-2. Expand a human-readable `*-test-plan.md`
-3. Write executable tests with CLI and coverage commands
-4. Implement the golden program
-5. Iterate until all tests pass
-6. Enforce coverage target (`>= 80%`, prefer `>= 90%` for pure business logic)
+1. Review `*-design.md` through an isolated subagent and record the result
+2. Collect user canonical examples and must-not-break behaviors
+3. Expand a human-readable `*-test-plan.md` by test category
+4. Write executable tests with CLI and coverage commands
+5. Implement the golden program
+6. Iterate until all tests pass
+7. Enforce coverage target (`>= 80%`, prefer `>= 90%` for pure business logic)
 
 ## Files
 
@@ -101,6 +105,7 @@ business-spec-to-golden/
     ├── artifact-header-template.md
     ├── spec-template.md
     ├── spec-document-reviewer-prompt.md
+    ├── spec-review-template.md
     └── test-plan-template.md
 ```
 

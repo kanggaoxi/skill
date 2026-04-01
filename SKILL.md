@@ -10,7 +10,7 @@ Turn a rough requirement document into:
 1. `*-understanding.md`
 2. `*-p0-questions.md`, `*-p1-questions.md`, `*-p2-questions.md`
 3. `*-global-flow.md`, `*-submodule-design.md`, `*-boundary-rules.md`
-4. `*-design.md`
+4. `*-design.md` plus `*-spec-review.md`
 5. `*-test-plan.md` and executable tests
 6. `golden.js` or `golden.py`
 
@@ -40,6 +40,7 @@ Default path: `docs/business-specs/YYYY-MM-DD-<topic>-*`
 | P1 Baseline | `*-submodule-design.md` |
 | P2 Baseline | `*-boundary-rules.md` |
 | Design Doc | `*-design.md` |
+| Spec Review | `*-spec-review.md` |
 | Test Plan | `*-test-plan.md` |
 | Executable Tests | `*-test.js` or `*-test.py` |
 | Golden Program | `golden.js` or `golden.py` |
@@ -246,8 +247,17 @@ After writing the spec:
 
 1. Dispatch a reviewer subagent using [spec-document-reviewer-prompt.md](/home/kgx/.claude/skills/business-spec-to-golden/references/spec-document-reviewer-prompt.md)
 2. Pass only the spec path and minimum task-local review context
-3. Re-dispatch after fixes if issues are found
-4. Stop after 3 rounds and surface unresolved issues to the user
+3. Write the reviewer result to `*-spec-review.md` using [spec-review-template.md](/home/kgx/.claude/skills/business-spec-to-golden/references/spec-review-template.md)
+4. If blocking issues are found, fix `*-design.md`, then re-dispatch and refresh `*-spec-review.md`
+5. Stop after 3 rounds and surface unresolved issues to the user
+
+Rules:
+
+- Do not show `*-design.md` to the user for approval until the isolated review has completed
+- Do not show `*-design.md` to the user if `*-spec-review.md` is `Issues Found` or `Review Blocked`
+- Do not move to tests unless `*-spec-review.md` says `Ready For User Review: yes` and the user has approved `*-design.md`
+- Treat blocking review issues as a hard gate, not advisory text
+- If isolated review fails to run or cannot complete, treat it as `Review Blocked` and stop downstream progress
 
 Then require explicit user approval on `*-design.md` before moving to tests.
 
@@ -255,15 +265,25 @@ If business rules change after approval, mark `*-design.md` and dependent test/c
 
 ## Test Planning
 
-Write `*-test-plan.md` using [test-plan-template.md](/home/kgx/.claude/skills/business-spec-to-golden/references/test-plan-template.md).
+Before writing the formal test plan, collect user test anchors:
+
+1. Ask for at least 2 canonical input/output examples
+2. Ask for must-not-break behaviors
+3. If failure paths matter, ask for at least 1 failure or error example
+
+Only after receiving these anchors may the agent draft categorized test candidates. Formal `*-test-plan.md` generation using [test-plan-template.md](/home/kgx/.claude/skills/business-spec-to-golden/references/test-plan-template.md) happens only after the user has confirmed or corrected the categories.
 
 Responsibilities:
 
-- user provides 2-5 canonical examples and must-not-break behaviors
+- user provides canonical examples, must-not-break behaviors, and key failure expectations
 - agent expands coverage for boundaries, invalid input, conflicts, and acceptance criteria
 
 Rules:
 
+- do not write the formal test plan before collecting user anchors
+- organize expanded tests by category before finalizing the plan
+- categories should usually include normal path, boundaries, errors, conflicts/precedence, and special-input handling
+- require the user to correct or confirm categories before writing the formal test plan
 - map important test cases back to spec rules
 - keep human-readable examples separate from executable test code
 - require user approval on the test plan before coding
@@ -312,6 +332,7 @@ Coverage rules:
 - `*-global-flow.md` changes stale P1, P2, spec, tests, and code
 - `*-submodule-design.md` changes stale P2, spec, tests, and code
 - `*-boundary-rules.md` changes stale spec, tests, and code
+- `*-spec-review.md` becomes stale whenever `*-design.md` changes
 - `*-design.md` changes after test planning stale tests and code
 
 Mark stale files explicitly before regenerating them.
@@ -324,6 +345,8 @@ Mark stale files explicitly before regenerating them.
 | Asked multiple questions | Keep only the first unresolved question active, then reconcile |
 | Failed to reconcile after an answer | Re-read the ledger, update statuses, then continue |
 | Kept asking after a structural correction | Update `*-understanding.md`, mark downstream files `stale`, and return to P0 |
+| Skipped isolated spec review | Run the reviewer, write `*-spec-review.md`, then continue |
+| Wrote a formal test plan before collecting user examples | Mark the test plan `stale`, collect user anchors, then regenerate |
 | Asked about internal implementation details too early | Move it to design stage unless it changes business behavior |
 | Let P2 expand without business impact | Remove or archive non-observable edge cases |
 
@@ -339,6 +362,7 @@ Before declaring success, ensure these files exist and reflect the latest approv
 6. `*-submodule-design.md`
 7. `*-boundary-rules.md`
 8. `*-design.md`
-9. `*-test-plan.md`
-10. `*-test.js` or `*-test.py`
-11. `golden.js` or `golden.py`
+9. `*-spec-review.md`
+10. `*-test-plan.md`
+11. `*-test.js` or `*-test.py`
+12. `golden.js` or `golden.py`
