@@ -1,27 +1,28 @@
 ---
 name: business-spec-to-golden
-description: "Turn rough business requirements into a clarified, reviewed implementation design spec and a test-validated golden program. Enforce a file-first workflow with a working-model understanding doc, staged P0/P1/P2 ledgers, approval gates, isolated spec review, and test-driven delivery."
+description: "Turn rough business requirements into a clarified, reviewed delivery spec and a test-validated golden program. Enforce a file-first workflow with a working-model understanding doc, staged P0/P1/P2 ledgers, approval gates, isolated spec review, and test-driven delivery."
 ---
 
-# Business Spec to Design Spec and Golden Program
+# Business Spec to Delivery Spec and Golden Program
 
 Turn a rough requirement document into:
 
 1. `*-understanding.md`
 2. `*-p0-questions.md`, `*-p1-questions.md`, `*-p2-questions.md`
 3. `*-global-flow.md`, `*-submodule-design.md`, `*-boundary-rules.md`
-4. `*-design.md` plus `*-spec-review.md`
+4. `*-spec.md` plus `*-spec-review.md`
 5. `*-test-plan.md` and executable tests
 6. `golden.js` or `golden.py`
 
 ## Hard Gates
 
-- **Stage Order**: Source Review → Understanding → P0 → P1 → P2 → Design Doc → Spec Review → User Review → Test Plan → Executable Tests → Golden Program.
+- **Stage Order**: Source Review → Understanding → P0 → P1 → P2 → Spec Doc → Spec Review → User Review → Test Plan → Executable Tests → Golden Program.
 - **File-First**: Read the current stage file before acting. Update it after each answer, correction, or approval.
 - **Single Question**: Ask exactly one business question at a time.
 - **Business Only**: Clarification is about business meaning, scope, contracts, flow, examples, priorities, and failure behavior. Do not ask engineering choices.
 - **No Silent Assumptions**: Missing business rules must be clarified or recorded as explicit assumptions for confirmation.
-- **Approval Gates**: Require user approval after `*-understanding.md`, `*-global-flow.md`, `*-submodule-design.md`, `*-boundary-rules.md`, `*-design.md`, `*-test-plan.md`, and final delivery.
+- **Delivery-Grade Spec**: `*-spec.md` is the only downstream-required business artifact. It must be sufficient on its own for test design and golden-program generation. No business-critical rule may exist only in `*-understanding.md`, `*-global-flow.md`, `*-submodule-design.md`, or `*-boundary-rules.md`.
+- **Approval Gates**: Require user approval after `*-understanding.md`, `*-global-flow.md`, `*-submodule-design.md`, `*-boundary-rules.md`, `*-spec.md`, `*-test-plan.md`, and final delivery.
 - **TDD Gate**: Start coding only after the test plan is approved and the executable test file exists.
 - **Completion Gate**: Delivery requires all tests passing and coverage meeting the configured threshold.
 
@@ -39,7 +40,7 @@ Default path: `docs/business-specs/YYYY-MM-DD-<topic>-*`
 | P0 Baseline | `*-global-flow.md` |
 | P1 Baseline | `*-submodule-design.md` |
 | P2 Baseline | `*-boundary-rules.md` |
-| Design Doc | `*-design.md` |
+| Spec Doc | `*-spec.md` |
 | Spec Review | `*-spec-review.md` |
 | Test Plan | `*-test-plan.md` |
 | Executable Tests | `*-test.js` or `*-test.py` |
@@ -192,6 +193,7 @@ Include:
 7. `Deferred Structural Questions or Explicit Assumptions`
 
 This file captures confirmed structure only, not Q&A history.
+Its purpose is stage compression and reviewability. It must not remain the only place that a golden-critical structural rule is described once `*-spec.md` is written.
 
 ## P1 Exit Artifact
 
@@ -209,6 +211,7 @@ For each module include:
 8. `Agent-Designed Internal Structures` if needed
 
 Keep it focused on confirmed behavior, not speculative implementation detail.
+Its confirmed behaviors must later be restated in `*-spec.md` if they affect tests or visible behavior.
 
 ## P2 Exit Artifact
 
@@ -229,17 +232,27 @@ Cover only business-visible cases:
 - error or rejection behavior
 
 Do not turn this file into a general edge-case dump.
+Its business-visible rules must later be restated in `*-spec.md` if they affect tests, outputs, or rejection behavior.
 
-## Design Doc
+## Spec Doc
 
-Write `*-design.md` using [spec-template.md](/home/kgx/.claude/skills/business-spec-to-golden/references/spec-template.md).
+Write `*-spec.md` using [spec-template.md](/home/kgx/.claude/skills/business-spec-to-golden/references/spec-template.md).
 
 The spec must:
 
 - be precise enough that two engineers would produce the same visible behavior
+- be self-sufficient enough that a new session given only `*-spec.md` can derive tests and implement the golden program without opening earlier stage artifacts
 - trace critical rules to approved artifacts or confirmed decisions
 - separate fixed contracts from agent-designed internals
+- restate every golden-relevant fact from earlier artifacts instead of requiring the reader to open them
 - contain no `TODO`, `TBD`, placeholders, or unresolved critical ambiguity
+
+Rules:
+
+- treat `*-understanding.md`, `*-global-flow.md`, `*-submodule-design.md`, and `*-boundary-rules.md` as working and traceability artifacts, not as downstream-required context
+- if a rule changes observable behavior, test expectations, precedence, rejection behavior, module handoff meaning, or acceptance criteria, it must appear explicitly in `*-spec.md`
+- do not rely on phrases like "same as in `*-global-flow.md`" for normative content; restate the actual rule in the spec
+- if information is still only present upstream, the spec is incomplete and downstream work must stop until it is folded in
 
 ## Spec Review and Design Freeze
 
@@ -248,20 +261,20 @@ After writing the spec:
 1. Dispatch a reviewer subagent using [spec-document-reviewer-prompt.md](/home/kgx/.claude/skills/business-spec-to-golden/references/spec-document-reviewer-prompt.md)
 2. Pass only the spec path and minimum task-local review context
 3. Write the reviewer result to `*-spec-review.md` using [spec-review-template.md](/home/kgx/.claude/skills/business-spec-to-golden/references/spec-review-template.md)
-4. If blocking issues are found, fix `*-design.md`, then re-dispatch and refresh `*-spec-review.md`
+4. If blocking issues are found, fix `*-spec.md`, then re-dispatch and refresh `*-spec-review.md`
 5. Stop after 3 rounds and surface unresolved issues to the user
 
 Rules:
 
-- Do not show `*-design.md` to the user for approval until the isolated review has completed
-- Do not show `*-design.md` to the user if `*-spec-review.md` is `Issues Found` or `Review Blocked`
-- Do not move to tests unless `*-spec-review.md` says `Ready For User Review: yes` and the user has approved `*-design.md`
+- Do not show `*-spec.md` to the user for approval until the isolated review has completed
+- Do not show `*-spec.md` to the user if `*-spec-review.md` is `Issues Found` or `Review Blocked`
+- Do not move to tests unless `*-spec-review.md` says `Ready For User Review: yes` and the user has approved `*-spec.md`
 - Treat blocking review issues as a hard gate, not advisory text
 - If isolated review fails to run or cannot complete, treat it as `Review Blocked` and stop downstream progress
 
-Then require explicit user approval on `*-design.md` before moving to tests.
+Then require explicit user approval on `*-spec.md` before moving to tests.
 
-If business rules change after approval, mark `*-design.md` and dependent test/code artifacts `stale` and return to the earliest affected stage.
+If business rules change after approval, mark `*-spec.md` and dependent test/code artifacts `stale` and return to the earliest affected stage.
 
 ## Test Planning
 
@@ -277,6 +290,7 @@ Responsibilities:
 
 - user provides canonical examples, must-not-break behaviors, and key failure expectations
 - agent expands coverage for boundaries, invalid input, conflicts, and acceptance criteria
+- agent derives all formal test rules from `*-spec.md`; if needed behavior exists only upstream, return to the spec stage and fold it in first
 
 Rules:
 
@@ -284,7 +298,7 @@ Rules:
 - organize expanded tests by category before finalizing the plan
 - categories should usually include normal path, boundaries, errors, conflicts/precedence, and special-input handling
 - require the user to correct or confirm categories before writing the formal test plan
-- map important test cases back to spec rules
+- map important test cases back to explicit spec rules in `*-spec.md`
 - keep human-readable examples separate from executable test code
 - require user approval on the test plan before coding
 
@@ -300,6 +314,7 @@ After test-plan approval:
 3. Provide CLI commands for the suite and coverage
 
 The test file must encode canonical examples plus critical boundary and failure behavior, and it must reflect the approved test plan.
+If a test requires opening earlier stage artifacts to learn expected behavior, the spec is not ready and must be fixed first.
 
 ## Golden Program
 
@@ -332,8 +347,8 @@ Coverage rules:
 - `*-global-flow.md` changes stale P1, P2, spec, tests, and code
 - `*-submodule-design.md` changes stale P2, spec, tests, and code
 - `*-boundary-rules.md` changes stale spec, tests, and code
-- `*-spec-review.md` becomes stale whenever `*-design.md` changes
-- `*-design.md` changes after test planning stale tests and code
+- `*-spec-review.md` becomes stale whenever `*-spec.md` changes
+- `*-spec.md` changes after test planning stale tests and code
 
 Mark stale files explicitly before regenerating them.
 
@@ -361,7 +376,7 @@ Before declaring success, ensure these files exist and reflect the latest approv
 5. `*-global-flow.md`
 6. `*-submodule-design.md`
 7. `*-boundary-rules.md`
-8. `*-design.md`
+8. `*-spec.md`
 9. `*-spec-review.md`
 10. `*-test-plan.md`
 11. `*-test.js` or `*-test.py`

@@ -2,7 +2,7 @@
 
 Use this template when writing `*-spec-review.md`.
 
-This file is the blocking review record between `*-design.md` and user approval.
+This file is the blocking review record between `*-spec.md` and user approval.
 
 ## Required Header
 
@@ -12,7 +12,7 @@ This file is the blocking review record between `*-design.md` and user approval.
 Status: Approved | Issues Found | Review Blocked
 Last Updated: YYYY-MM-DD HH:mm
 Derived From:
-- [design.md path]
+- [spec.md path]
 - [reviewer prompt path]
 ```
 
@@ -20,7 +20,7 @@ Derived From:
 
 ### 1. Reviewed Against
 
-- Design spec path
+- Delivery spec path
 - Template or structure reference used
 - Reviewer scope
 
@@ -42,6 +42,7 @@ Derived From:
 ### 5. Code-Generation Readiness
 
 - Is the spec ready to guide test planning and implementation?
+- Can another session work from `*-spec.md` alone without reopening upstream stage artifacts?
 - Are there unresolved details that would lead to unstable code generation?
 
 ### 6. Ready For User Review

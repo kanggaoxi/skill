@@ -3,6 +3,7 @@
 Use this template when writing `*-test-plan.md`.
 
 The test plan is the human-readable test baseline. It is approved before executable tests are treated as final.
+It must be derivable from `*-spec.md` alone.
 
 ## Required Header
 
@@ -12,7 +13,7 @@ The test plan is the human-readable test baseline. It is approved before executa
 Status: draft | approved | stale | superseded
 Last Updated: YYYY-MM-DD HH:mm
 Derived From:
-- [approved design.md]
+- [approved spec.md]
 ```
 
 ## Required Sections
@@ -69,4 +70,5 @@ Use a concise table:
 - Keep the plan concise
 - Use canonical answers, not raw conversation dumps
 - Ensure important spec rules map to explicit tests
+- If expected behavior can only be learned from `*-understanding.md`, `*-global-flow.md`, `*-submodule-design.md`, or `*-boundary-rules.md`, stop and repair `*-spec.md` before finalizing the test plan
 - Do not start coding until this plan is approved
