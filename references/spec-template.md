@@ -1,148 +1,204 @@
-# Delivery Spec Template
+# Golden-Oriented Spec Template
 
 Use this template when writing `*-spec.md`.
 
-Keep the document implementation-ready, behaviorally precise, and traceable to approved artifacts.
-This document is the delivery artifact and the only business document downstream agents should need for test planning and golden-program generation.
+The spec is the downstream source of truth for test planning and golden implementation. It must be complete enough that a new session can implement the golden from this file alone.
 
 ## Required Header
 
 ```markdown
-# [Topic] Delivery Spec
+# [Topic] Golden-Oriented Spec
 
 Status: draft | approved | stale | superseded
 Last Updated: YYYY-MM-DD HH:mm
+Profile: generic | python-golden | cpu-preprocess | parser | validator | rule-engine | other
 Derived From:
-- [approved understanding.md]
-- [approved global-flow.md]
-- [approved submodule-design.md]
-- [approved boundary-rules.md]
+- [source design document path]
+- [user-provided test case path or description]
+- [approved P0/P1 baseline artifacts]
+- [approved P2 baseline artifact, or note that P2 was skipped/deferred]
 ```
 
 ## Required Sections
 
-### 1. Objective
+### 1. Objective and Scope
 
-- Business outcome
-- Success criteria
 - What the golden program must prove
-- Why this spec is the standalone downstream source of truth
+- In-scope processing slice
+- Explicit out-of-scope behavior
+- Success criteria for the generated golden
 
-### 2. Scope
+### 2. Evidence and Trust Notes
 
-- In-scope slice
-- Explicit out-of-scope items
-- Assumptions still allowed at implementation time, if any
+Summarize only evidence that matters for golden behavior.
 
-### 3. Source Context and Confirmed Assumptions
+| Rule or Fact | Source | Trust Level | Notes |
+|--------------|--------|-------------|-------|
+| | source-doc / user-test / user-confirmed / agent-inferred / assumption | high / medium / low / conflict | |
 
-- Short summary of source intent
-- Confirmed assumptions that remain active
-- Deferred items that are explicitly contained and do not block code generation
+Rules:
 
-### 4. Structural Baseline
+- User-confirmed facts and user-provided test cases usually outrank ambiguous source prose.
+- Agent inferences must be labeled as inferences.
+- Conflicts must name both sides and the chosen resolution or blocking question.
 
-- Summary of the approved system-level flow
-- System-level input contract
-- System-level output contract
-- Module boundaries
+### 3. P0 Baseline: System Contract
 
-### 5. Domain Model
+- System-level inputs
+- System-level outputs
+- External caller/model/input contract
+- Main processing stages or modules
+- Authoritative examples or tests
+- P0 assumptions and deferrals that do not block code generation
 
-- Core entities
-- Business meaning of each entity
-- Important invariants
+### 4. P1 Baseline: Core Processing Rules
 
-### 6. External Contracts
+List normal-path behavior as implementable rules.
 
-- Inputs visible to the caller or upstream system
-- Outputs visible to the caller or downstream system
-- Validation rules that affect observable behavior
+Use a compact table when possible:
 
-### 7. Processing Flow
+| Rule ID | Condition/Input | Processing Rule | Output Effect | Source |
+|---------|-----------------|-----------------|---------------|--------|
 
-- End-to-end steps
-- Branch conditions
-- Handoffs between modules
-- Ordering and precedence that affect visible behavior
+Cover applicable behavior:
 
-### 8. Module Behavior
+- extraction and mapping
+- calculations and conversions
+- filtering, aggregation, ordering, ranking, windowing
+- rule precedence and tie-breaking
+- normal-path output construction
 
-For each module:
+### 5. P2 Baseline: Boundary, Conflict, and Default Rules
 
-- Responsibility
-- Business inputs and outputs
-- Normal-path logic
-- Ordering and precedence rules
-- Dependencies
-- Boundary behavior that this module owns, if any
+State whether P2 was `full`, `critical-only`, or `skipped`.
 
-### 9. Cross-Module Rules and Decision Precedence
+Use a decision table:
 
-- Rules that span multiple modules
-- Conflict resolution precedence
-- Tie-breaking behavior
-- Any rule that tests must assert across module boundaries
+| Case | Condition | Expected Behavior | Output/Error | Source |
+|------|-----------|-------------------|--------------|--------|
 
-### 10. Boundary and Failure Rules
+Cover only observable behavior:
 
-- Missing input behavior
-- Invalid input behavior
-- Boundary thresholds
-- Duplicate and conflict handling
-- Error or rejection behavior
-- Output or error interpretation expected by callers
+- missing or empty input
+- invalid or out-of-range values
+- duplicate or conflicting data
+- default and fill values
+- rejection/error behavior
+- source/test contradictions that affect output
 
-Use a compact decision table when practical.
+If P2 was skipped, list deferred boundary risks instead of inventing behavior:
 
-### 11. Canonical Examples
+| Deferred P2 Item | Why Deferred | Assumed Behavior For Golden | Risk |
+|------------------|--------------|-----------------------------|------|
 
-- At least two normal examples
-- At least one edge or failure example
-- Examples must match the stated rules
-- Each example should be detailed enough to turn directly into executable tests
+### 6. Input Contract
 
-### 12. Acceptance Criteria and Test Implications
+Define the input format clearly enough to write tests.
 
-- What must be true for the implementation to be considered correct
-- Observable behaviors that require explicit tests
-- Coverage expectations or non-negotiable business rules
+For each input item, include:
 
-### 13. Internal Design Choices
+- name and business meaning
+- structure/type
+- required or optional
+- unit, value range, precision, or enum values when applicable
+- relationship to other inputs
+- missing/invalid behavior or a pointer to the P2 rule
 
-- Agent-designed internal structures that are not business-fixed
-- Why they are safe with respect to the approved contracts
+### 7. Output Contract
 
-### 14. Clarification Decisions and Traceability
+Define the output format clearly enough to compare results.
 
-- Important confirmed decisions from the ledgers
-- Deferred decisions and how they are contained
-- For each critical rule, cite where it came from without requiring the reader to open that file to learn the rule itself
+Include:
 
-### 15. Standalone Readiness Check
+- structure/type
+- field names, order, dtype, shape, unit, precision, or tolerance when applicable
+- deterministic ordering rules
+- default/fill behavior
+- error/result representation
 
-State `yes` or `no` for each item:
+### 8. Canonical Examples
 
-- A new session given only this file can design the test plan
-- A new session given only this file can implement the golden program
-- No business-critical rule exists only in an upstream stage artifact
-- No unresolved ambiguity would change visible behavior
+Include user-provided examples first, then any agent-normalized examples.
+
+Each example must include:
+
+- name
+- input
+- expected output or error
+- rules covered
+- whether the example came from the user, source doc, or agent expansion
+
+### 9. Implementation Freedom
+
+List choices the golden implementer may decide without changing visible behavior:
+
+- helper functions
+- internal normalized structures
+- file layout
+- variable names
+- non-observable implementation details
+
+Do not put business rules in this section.
+
+### 10. Profile-Specific Requirements
+
+Use only applicable profile checks.
+
+#### Python Golden
+
+- entrypoint name and signature, if fixed
+- expected file: `golden.py`
+- expected tests: `*-test.py`
+- framework: `pytest`
+- deterministic behavior requirements
+
+#### CPU Preprocess
+
+When applicable, specify:
+
+- input messages/records/files
+- field extraction rules
+- units, normalization, scaling, and precision
+- cross-record association, sorting, ranking, aggregation, and windowing
+- model-input order, dtype, shape, and fill values
+- behavior for missing messages/fields, duplicates, stale values, and conflicts
+
+### 11. Open Assumptions
+
+Only non-blocking assumptions may remain.
+
+| Assumption | Why Non-Blocking | Risk If Wrong | How To Detect |
+|------------|------------------|---------------|---------------|
+
+If an assumption can change expected golden output for known tests or core acceptance behavior, it is blocking and must be resolved before approval.
+
+### 12. Standalone Readiness Check
+
+State `yes` or `no`:
+
+- A new session given only this file can write the test plan.
+- A new session given only this file can implement `golden.py`.
+- Every critical rule has an evidence source or explicit assumption.
+- No critical behavior exists only in upstream artifacts.
+- No unresolved ambiguity would change visible output or test assertions.
+- Skipped P2 items, if any, are explicitly listed and do not affect approved canonical tests.
 
 ## Prohibited Content
 
 - `TODO`
 - `TBD`
-- placeholders
 - unresolved contradictions
 - hidden assumptions presented as facts
-- normative statements that only point to another artifact instead of restating the rule here
+- "same as upstream document" as normative content
+- implementation-only detail disguised as business clarification
 
 ## Quality Bar
 
-The document is ready only if:
+The spec is ready only if:
 
-- two engineers would implement the same visible behavior
-- a downstream agent with only `*-spec.md` could produce stable tests and code
-- critical rules are traceable to approved artifacts or confirmed answers
-- internal design freedom is separated from fixed business contracts
-- no business-visible behavior is exclusive to an upstream working artifact
+- two engineers would produce the same visible behavior
+- important source/test conflicts are resolved or explicitly contained
+- user-provided tests are represented as canonical examples
+- P0/P1 baselines and any run P2 baseline are folded into the spec
+- skipped P2 risks are explicit instead of silently resolved
+- the golden can be implemented without reopening earlier stage artifacts

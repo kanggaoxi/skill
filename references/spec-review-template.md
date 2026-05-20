@@ -45,7 +45,13 @@ Derived From:
 - Can another session work from `*-spec.md` alone without reopening upstream stage artifacts?
 - Are there unresolved details that would lead to unstable code generation?
 
-### 6. Ready For User Review
+### 6. Evidence and Conflict Handling
+
+- Are source-doc facts, user-test facts, user confirmations, assumptions, and inferences separated?
+- Are source/test conflicts recorded and resolved or marked as blocking?
+- Are P0/P1/P2 baselines folded into the spec rather than left only upstream?
+
+### 7. Ready For User Review
 
 - `yes` or `no`
 - One-sentence justification

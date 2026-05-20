@@ -1,74 +1,114 @@
-# Test Plan Template
+# Golden Test Plan Template
 
 Use this template when writing `*-test-plan.md`.
 
-The test plan is the human-readable test baseline. It is approved before executable tests are treated as final.
-It must be derivable from `*-spec.md` alone.
+The test plan converts the approved spec into executable test intent. It must be short, traceable, and focused on golden behavior.
 
 ## Required Header
 
 ```markdown
-# [Topic] Test Plan
+# [Topic] Golden Test Plan
 
 Status: draft | approved | stale | superseded
 Last Updated: YYYY-MM-DD HH:mm
+Profile: generic | python-golden | cpu-preprocess | parser | validator | rule-engine | other
 Derived From:
 - [approved spec.md]
+- [user-provided test case path or description]
 ```
 
 ## Required Sections
 
 ### 1. Purpose
 
-- What behavior this test plan validates
-- Which implementation slice it covers
+- Behavior validated by this plan
+- In-scope golden implementation
+- Out-of-scope implementation details outside the golden
 
-### 2. User-Provided Canonical Examples
+### 2. User-Provided Test Cases
 
-For each example include:
+Record the user examples as anchors.
 
-- name
-- input
-- expected output or expected error
-- why it matters
+| Case ID | Source | Input Summary | Expected Output/Error | Notes |
+|---------|--------|---------------|-----------------------|-------|
 
-### 3. Agent-Expanded Coverage Matrix
+Do not rewrite expected behavior silently. If normalization is needed, explain it in the next section.
 
-Group tests by behavior:
+### 3. Normalized Canonical Cases
 
-- normal path
-- boundary values
-- invalid input
-- conflict or precedence rules
-- duplicate handling
-- explicit error behavior
+Convert user examples into executable-test-ready cases.
 
-Use a concise table:
+| Case ID | Normalized Input | Expected Result | Covered Spec Rules | Normalization Notes |
+|---------|------------------|-----------------|--------------------|---------------------|
 
-| Test ID | Category | Scenario | Expected Result | Source Rule |
+### 4. Rule Coverage Matrix
+
+Map important spec rules to tests.
+
+| Spec Rule | Test Case(s) | Category | Covered? | Gap or Rationale |
+|-----------|--------------|----------|----------|------------------|
+
+Categories should normally include:
+
+- P0 contract
+- P1 core behavior
+- P2 boundary/conflict/default behavior when P2 was run or critical-only
+- regression or must-not-break behavior
+
+Every output-changing rule should be covered or have an explicit rationale.
+
+### 5. Agent-Expanded Cases
+
+Add only high-value cases derived from the spec.
+
+| Case ID | Category | Scenario | Expected Result | Source Rule |
 |---------|----------|----------|-----------------|-------------|
 
-### 4. Must-Not-Break Behaviors
+Prefer a few strong cases over broad low-value coverage.
 
-- Rules the user considers critical
-- Behaviors that must remain stable during implementation iteration
+### 6. Expected-Output Comparison Strategy
 
-### 5. Executable Test Mapping
+Define how test assertions check `golden.py` outputs against expected outputs:
 
-- Which cases will become executable tests
-- Expected test file path
-- Expected CLI command
-- Expected coverage command
+- exact vs tolerant numeric comparison
+- field order and deterministic sorting
+- dtype, shape, precision, or unit expectations when applicable
+- error/result representation
+- ignored fields, if any
 
-### 6. Open Questions or Deferrals
+This only validates the generated golden against expected results from the approved spec and test cases.
 
-- Only items that must be resolved before coding
-- If critical, return to clarification rather than silently carrying them forward
+### 7. Executable Test Mapping
+
+- Expected test file path: `docs/business-specs/YYYY-MM-DD-<topic>-test.py` or project-appropriate path
+- Expected golden path: `golden.py` or project-appropriate path
+- Test command: `pytest [path]`
+- Coverage command, if tooling exists
+- Optional case file path, if useful: `docs/business-specs/YYYY-MM-DD-<topic>-cases.json`
+- Optional test harness path, if useful: `golden_test_harness.py`
+
+Map cases to test functions:
+
+| Case ID | Test Function | Notes |
+|---------|---------------|-------|
+
+### 8. Open Test Gaps
+
+List only gaps that remain after spec approval:
+
+| Gap | Why It Remains | Risk | Blocking? |
+|-----|----------------|------|-----------|
+
+If a gap changes expected golden behavior for a critical rule, return to the spec stage instead of approving the test plan.
+If P2 was skipped, record that boundary coverage is intentionally limited and ensure skipped P2 gaps do not affect approved canonical tests.
 
 ## Rules
 
-- Keep the plan concise
-- Use canonical answers, not raw conversation dumps
-- Ensure important spec rules map to explicit tests
-- If expected behavior can only be learned from `*-understanding.md`, `*-global-flow.md`, `*-submodule-design.md`, or `*-boundary-rules.md`, stop and repair `*-spec.md` before finalizing the test plan
-- Do not start coding until this plan is approved
+- Derive expected behavior from `*-spec.md`, not upstream working artifacts.
+- Encode user-provided cases first.
+- Keep the plan concise.
+- Do not duplicate the whole spec.
+- Do not generate a separate harness unless it reduces test complexity or improves stability.
+- A harness must not introduce business rules that are absent from the spec.
+- Do not start coding until this plan is approved.
+- If expected behavior can only be learned from upstream artifacts, repair `*-spec.md` before finalizing this plan.

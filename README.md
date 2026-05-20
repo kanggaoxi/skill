@@ -1,102 +1,85 @@
 # business-spec-to-golden
 
-A Claude Code Skill that transforms requirement documents into reviewed delivery specs and test-validated golden reference programs.
+A Codex Skill for turning unreliable design documents and a few test cases into a clarified spec, executable tests, and a golden program.
 
-## Overview
+## Positioning
 
-This Skill converts ambiguous requirements into:
+This Skill is not tied to one narrow business scenario. Its core use case is:
 
-1. **Working-Model Understanding** - A correction-friendly baseline that separates source facts from agent interpretation
-2. **Staged Question Ledgers** - Separate P0, P1, and P2 ledgers with reconciliation
-3. **Tiered Baseline Outputs** - Structural, module, and boundary artifacts
-4. **Reviewed Delivery Spec** - A standalone implementation-ready spec plus isolated review
-5. **Approved Test Plan and Executable Tests** - User-anchored plan plus runnable tests
-6. **Golden Reference Program** - Passing tests and coverage gates
+- source design documents may be incomplete, misleading, domain-heavy, or internally inconsistent
+- the user has only a small number of test cases
+- the agent must clarify the implementation target without overwhelming the developer
+- the final output must be a test-validated golden implementation
+
+The default implementation profile is Python with `pytest` and `golden.py`. Other languages should be used only when explicitly requested or required by the repository.
 
 ## Key Features
 
-- **Working-Model Understanding** - Scope, structure, and ambiguities are surfaced before detailed questioning
-- **Stage-by-Stage Ledgers** - P0, P1, and P2 are generated only when needed
-- **Ledger Reconciliation** - New answers can resolve, obsolete, or supersede future questions
-- **Baseline Artifacts** - Each tier produces a compact input for the next stage
-- **Isolated Spec Review** - Design docs are reviewed by a separate subagent before user approval
-- **User-Anchored Test Planning** - Formal test planning starts from user examples, then agent expands coverage
-- **Design Freeze and Test Freeze** - Code starts only after approved spec and test plan
-- **Coverage Gate** - Golden program must pass tests and meet coverage targets
-
-## Single Skill
-
-This repository maintains a single `SKILL.md`, with detailed format references under `references/`.
+- **Evidence discipline** - separates source document facts, user test facts, user confirmations, assumptions, and agent inferences
+- **P0/P1/P2 layered convergence** - keeps the original staged clarification model, but generates questions layer by layer
+- **Question budget** - asks only the smallest high-impact batch needed for the next baseline
+- **Optional P2 pass** - lets the developer decide whether to spend time on boundary/conflict details
+- **Bad-document resistance** - records source/test conflicts and does not treat official-looking prose as unquestioned truth
+- **Standalone spec** - folds all golden-relevant rules into `*-spec.md`
+- **Spec review gate** - reviews the spec before user approval and test planning
+- **Test-first golden generation** - writes executable tests before `golden.py`
+- **Optional test harness** - generated only when test loading or expected-output comparison would otherwise become fragile
 
 ## Workflow
 
 ```
-1. Working-Model Understanding → *-understanding.md
-2. P0 Clarification → *-p0-questions.md → *-global-flow.md
-3. P1 Clarification → *-p1-questions.md → *-submodule-design.md
-4. P2 Clarification → *-p2-questions.md → *-boundary-rules.md
-5. Spec Doc → *-spec.md
-6. Spec Review → *-spec-review.md
-7. User Review & Design Freeze
-8. Collect User Examples → Test Plan → *-test-plan.md
-9. Executable Tests → *-test.js / *-test.py
-10. Golden Program → tests + coverage gates
+1. Understanding → *-understanding.md
+2. P0 system contract → *-p0-questions.md → *-global-flow.md
+3. P1 core behavior → *-p1-questions.md → *-submodule-design.md
+4. Optional P2 boundary/conflict/default behavior → *-p2-questions.md → optional *-boundary-rules.md
+5. Spec → *-spec.md
+6. Spec review → *-spec-review.md
+7. User approval
+8. Test plan → *-test-plan.md
+9. Executable tests → *-test.py
+10. Golden program → golden.py
 ```
 
 ## P0/P1/P2 Semantics
 
-| Tier | Scope | Questions About |
-|------|-------|-----------------|
-| **P0** | Structure-level | Scope, module boundaries, system I/O, main flow, structural handoffs |
-| **P1** | Normal-path module behavior | Module responsibilities, business inputs/outputs, transform logic, precedence |
-| **P2** | Boundary and failure behavior | Missing input, invalid values, duplicates, conflicts, rejection behavior |
+| Layer | Purpose | Typical Questions |
+|-------|---------|-------------------|
+| P0 | Golden scope and system contract | inputs, outputs, in-scope slice, external contracts, authoritative tests |
+| P1 | Core normal-path behavior | extraction, mapping, calculation, conversion, filtering, aggregation, ordering, precedence |
+| P2 | Optional boundary and conflict behavior | missing input, invalid values, duplicates, conflicts, defaults, error/rejection behavior |
+
+The agent should not dump all questions at once. Each layer has a candidate pool, a ranked question budget, and a baseline summary. P2 is entered only when the developer chooses full or critical-only boundary clarification; otherwise skipped P2 risks are recorded in the spec.
 
 ## Output Files
 
-All files go to `docs/business-specs/YYYY-MM-DD-<topic>-*`:
+All files normally go to `docs/business-specs/YYYY-MM-DD-<topic>-*`:
 
 | File | Content |
 |------|---------|
-| `*-understanding.md` | Working-model understanding and ambiguity list |
-| `*-p0-questions.md` | Structure-level question ledger |
-| `*-p1-questions.md` | Normal-path question ledger |
-| `*-p2-questions.md` | Boundary/failure question ledger |
-| `*-global-flow.md` | Structural baseline |
-| `*-submodule-design.md` | Normal-path module baseline |
-| `*-boundary-rules.md` | Boundary decision matrix |
-| `*-spec.md` | Full delivery spec and downstream source of truth |
-| `*-spec-review.md` | Isolated review result for the delivery spec |
-| `*-test-plan.md` | Human-readable test design and traceability |
-| `*-test.js` / `*-test.py` | Executable tests with CLI and coverage commands |
+| `*-understanding.md` | working model, evidence map, trust/conflict notes |
+| `*-p0-questions.md` | P0 candidate pool and decisions |
+| `*-global-flow.md` | approved system contract baseline |
+| `*-p1-questions.md` | P1 candidate pool and decisions |
+| `*-submodule-design.md` | approved core behavior baseline |
+| `*-p2-questions.md` | P2 candidate pool and decisions |
+| `*-boundary-rules.md` | approved boundary/conflict/default baseline when P2 is run |
+| `*-spec.md` | standalone golden-oriented spec |
+| `*-spec-review.md` | blocking review result |
+| `*-test-plan.md` | concise test plan and executable mapping |
+| `*-test.py` | executable pytest tests |
+| `*-cases.json` | optional case data when useful |
+| `golden_test_harness.py` | optional helper for loading cases and comparing expected outputs |
+| `golden.py` | standard golden implementation |
 
-## Usage
+## Profiles
 
-```
-/business-spec-to-golden
-```
+The workflow is general. The Skill includes default guidance for:
 
-Or provide your requirements document:
+- Python golden generation
+- CPU preprocessing before model inference
+- telecom or other domain-heavy source documents
 
-```
-Here's my product requirements document [attach document].
-Please help me generate a delivery spec and reference implementation.
-```
-
-## Test-Driven Golden Program
-
-The golden program is developed only after the spec is reviewed and the test plan is user-anchored:
-
-1. Review `*-spec.md` through an isolated subagent and record the result
-2. Collect user canonical examples and must-not-break behaviors
-3. Expand a human-readable `*-test-plan.md` by test category
-4. Write executable tests with CLI and coverage commands
-5. Implement the golden program
-6. Iterate until all tests pass
-7. Enforce coverage target (`>= 80%`, prefer `>= 90%` for pure business logic)
-
-## Standalone Spec Rule
-
-`*-spec.md` is the delivery artifact. A fresh session given only that file should still be able to design tests and generate the golden program correctly. Earlier artifacts such as `*-understanding.md`, `*-global-flow.md`, `*-submodule-design.md`, and `*-boundary-rules.md` are for clarification traceability and staging, not for carrying business-critical rules exclusively.
+Profile-specific checks are applied only when they match the task.
 
 ## Files
 
@@ -112,7 +95,3 @@ business-spec-to-golden/
     ├── spec-review-template.md
     └── test-plan-template.md
 ```
-
-## License
-
-MIT

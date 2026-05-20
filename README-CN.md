@@ -1,102 +1,85 @@
 # business-spec-to-golden
 
-一个 Claude Code Skill，用于将需求文档转换为经过评审的交付规格和测试验证过的黄金参考程序。
+一个 Codex Skill，用于把不可靠的原始设计文档和少量测试用例，转成澄清后的 spec、可执行测试和 golden 程序。
 
-## 概述
+## 定位
 
-本 Skill 将模糊需求转换为：
+这个 Skill 不绑定某一个狭窄业务场景。它解决的是这类问题：
 
-1. **工作模型理解文档** - 便于纠偏的理解基线，区分源事实与 agent 的解释
-2. **分阶段问题清单** - 分开的 P0、P1、P2 ledger，并带问题收敛机制
-3. **分层基线产物** - 结构、模块、边界三个阶段产物
-4. **经过评审的交付规格** - 可独立交付的 spec 先经隔离 review，再进入用户确认
-5. **已确认的测试计划与可执行测试** - 基于用户样例锚点扩展测试，再生成测试代码
-6. **黄金参考程序** - 通过测试与覆盖率门槛的参考实现
+- 原始设计文档可能不完整、有误、含大量领域术语，或者前后矛盾
+- 用户手里只有少量测试用例
+- agent 需要帮用户澄清实现目标，但不能用大量细碎问题打扰开发
+- 最终要产出经过测试验证的 golden 标准实现
+
+默认实现 profile 是 Python、`pytest` 和 `golden.py`。只有用户明确要求或仓库环境强约束时，才切换到其他语言。
 
 ## 核心特性
 
-- **工作模型理解** - 先暴露 scope、结构和歧义点，再深入提问
-- **按阶段生成问题** - 不再一开始生成完整大问题表
-- **问题收敛机制** - 新答案可以覆盖、作废或替代后续问题
-- **基线产物** - 每个阶段都沉淀为后续阶段的压缩输入
-- **隔离式 Spec Review** - 交付规格先由独立子代理审查，再交给用户确认
-- **用户锚点驱动的测试设计** - 正式 test plan 先基于用户样例，再由 agent 扩展覆盖
-- **设计冻结与测试冻结** - 代码生成前必须先确认 spec 和 test plan
-- **覆盖率门槛** - 黄金程序不仅要跑通测试，还要满足覆盖率要求
-
-## 单一 Skill
-
-这个仓库只维护一个 `SKILL.md`，详细格式规范下沉到 `references/`。
+- **证据分层**：区分原始文档事实、用户测试事实、用户确认、agent 推断和显式假设
+- **P0/P1/P2 分层收敛**：保留分层澄清思想，但按层生成问题，不一次性展开
+- **问题预算**：每层只问最小一批高影响问题
+- **P2 可选**：边界/冲突细节由开发决定是否投入时间继续澄清
+- **低质量文档防误导**：记录文档和测试用例冲突，不把看似正式的原文直接当真理
+- **独立 spec**：所有影响 golden 的规则都折入 `*-spec.md`
+- **spec review gate**：spec 先评审，再让用户确认和进入测试
+- **测试先行**：先写可执行测试，再写 `golden.py`
+- **可选测试 harness**：只有测试加载或 expected-output 比较变复杂时才生成
 
 ## 工作流
 
 ```
-1. 工作模型理解 → *-understanding.md
-2. P0 澄清 → *-p0-questions.md → *-global-flow.md
-3. P1 澄清 → *-p1-questions.md → *-submodule-design.md
-4. P2 澄清 → *-p2-questions.md → *-boundary-rules.md
-5. 规格文档 → *-spec.md
-6. 隔离规格评审 → *-spec-review.md
-7. 用户确认与设计冻结
-8. 收集用户样例 → 测试计划 → *-test-plan.md
-9. 可执行测试 → *-test.js / *-test.py
-10. 黄金程序 → 测试与覆盖率门槛
+1. 理解阶段 → *-understanding.md
+2. P0 系统契约 → *-p0-questions.md → *-global-flow.md
+3. P1 核心行为 → *-p1-questions.md → *-submodule-design.md
+4. 可选 P2 边界/冲突/默认行为 → *-p2-questions.md → 可选 *-boundary-rules.md
+5. Spec → *-spec.md
+6. Spec review → *-spec-review.md
+7. 用户确认
+8. Test plan → *-test-plan.md
+9. 可执行测试 → *-test.py
+10. Golden 程序 → golden.py
 ```
 
-## P0/P1/P2 分层定义
+## P0/P1/P2 语义
 
-| 层级 | 范围 | 问题类型 |
+| 层级 | 目的 | 典型问题 |
 |------|------|----------|
-| **P0** | 结构级 | scope、模块边界、系统级 I/O、主流程、结构性交接 |
-| **P1** | 正常路径模块行为 | 模块职责、业务输入/输出、转换逻辑、规则优先级 |
-| **P2** | 边界与失败行为 | 缺失输入、无效值、重复/冲突、拒绝与报错行为 |
+| P0 | Golden 范围和系统契约 | 输入、输出、处理范围、外部契约、权威测试用例 |
+| P1 | 正常路径核心行为 | 提取、映射、计算、转换、过滤、聚合、排序、优先级 |
+| P2 | 可选的边界和冲突行为 | 缺失输入、非法值、重复、冲突、默认值、错误/拒绝行为 |
+
+agent 不应该一次性抛出所有问题。每层都有候选池、排序后的问题预算和基线摘要。P2 只有在开发选择 full 或 critical-only 边界澄清时才进入；否则把跳过的 P2 风险记录进 spec。
 
 ## 输出文件
 
-所有文件保存在 `docs/business-specs/YYYY-MM-DD-<topic>-*`：
+默认保存在 `docs/business-specs/YYYY-MM-DD-<topic>-*`：
 
 | 文件 | 内容 |
 |------|------|
-| `*-understanding.md` | 工作模型理解与歧义列表 |
-| `*-p0-questions.md` | 结构级问题清单 |
-| `*-p1-questions.md` | 正常路径问题清单 |
-| `*-p2-questions.md` | 边界/失败问题清单 |
-| `*-global-flow.md` | 结构基线 |
-| `*-submodule-design.md` | 正常路径模块基线 |
-| `*-boundary-rules.md` | 边界决策矩阵 |
-| `*-spec.md` | 完整交付规格，也是下游唯一业务真源 |
-| `*-spec-review.md` | 交付规格的隔离审查结果 |
-| `*-test-plan.md` | 人类可读的测试计划与映射 |
-| `*-test.js` / `*-test.py` | 带 CLI 与 coverage 命令的可执行测试 |
+| `*-understanding.md` | 工作理解、证据分层、信任和冲突记录 |
+| `*-p0-questions.md` | P0 候选问题和决策 |
+| `*-global-flow.md` | 已确认的系统契约基线 |
+| `*-p1-questions.md` | P1 候选问题和决策 |
+| `*-submodule-design.md` | 已确认的核心行为基线 |
+| `*-p2-questions.md` | P2 候选问题和决策 |
+| `*-boundary-rules.md` | P2 执行时的边界/冲突/默认行为基线 |
+| `*-spec.md` | 可独立指导 golden 生成的 spec |
+| `*-spec-review.md` | 阻塞式 spec 评审结果 |
+| `*-test-plan.md` | 简洁测试计划和可执行映射 |
+| `*-test.py` | pytest 测试 |
+| `*-cases.json` | 可选测试用例数据 |
+| `golden_test_harness.py` | 可选的用例加载和 expected-output 比较辅助 |
+| `golden.py` | golden 标准实现 |
 
-## 使用方法
+## Profiles
 
-```
-/business-spec-to-golden
-```
+主流程是通用的。当前内置了这些默认指导：
 
-或直接提供需求文档：
+- Python golden 生成
+- 模型推理前的 CPU 前处理
+- 通信或其他领域术语密集的原始文档
 
-```
-这是我的产品需求文档 [附上文档]。
-请帮我生成交付规格和参考实现。
-```
-
-## 测试驱动的黄金程序
-
-黄金程序必须在 spec 完成隔离 review、且 test plan 建立在用户样例之上后，才进入实现阶段：
-
-1. 通过隔离子代理审查 `*-spec.md` 并记录结果
-2. 收集用户提供的 canonical examples 与 must-not-break behaviors
-3. 先按测试类别收敛，再生成 `*-test-plan.md`
-4. 再生成带 CLI 与 coverage 命令的可执行测试
-5. 实现黄金程序
-6. 迭代直到所有测试通过
-7. 满足覆盖率门槛（默认 `>= 80%`，纯业务逻辑优先 `>= 90%`）
-
-## 独立交付规则
-
-`*-spec.md` 必须是可单独交付的文档。新开一个会话，只给这个文件，也应当能够继续设计测试并生成 golden。`*-understanding.md`、`*-global-flow.md`、`*-submodule-design.md`、`*-boundary-rules.md` 只负责澄清与追溯，不允许独占任何影响测试或可见行为的业务规则。
+只有任务匹配时才应用 profile-specific 检查。
 
 ## 文件结构
 
@@ -112,7 +95,3 @@ business-spec-to-golden/
     ├── spec-review-template.md
     └── test-plan-template.md
 ```
-
-## 许可证
-
-MIT
